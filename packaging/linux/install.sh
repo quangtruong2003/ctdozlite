@@ -8,7 +8,7 @@ if [ "$(id -u)" -eq 0 ]; then
     APP_DIR="/usr/local/share/applications"
     ICON_DIR="/usr/local/share/icons/hicolor/256x256/apps"
 elif command -v sudo >/dev/null 2>&1; then
-    echo "Cài đặt ctdozlite vào /usr/local/bin (yêu cầu quyền sudo)..."
+    echo "Cài đặt Best Zalo vào /usr/local/bin (yêu cầu quyền sudo)..."
     exec sudo bash "$0" "$@"
 else
     BIN_DIR="$HOME/.local/bin"
@@ -26,5 +26,5 @@ if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database "$APP_DIR" >/dev/null 2>&1 || true
 fi
 
-echo "Đã cài đặt thành công ctdozlite tại $BIN_DIR/ctdozlite"
-echo "Chạy ứng dụng bằng lệnh: ctdozlite (hoặc mở từ menu ứng dụng)."
+echo "Đã cài đặt thành công Best Zalo tại $BIN_DIR/ctdozlite"
+echo "Chạy ứng dụng bằng lệnh: ctdozlite (hoặc mở Best Zalo từ menu ứng dụng)."

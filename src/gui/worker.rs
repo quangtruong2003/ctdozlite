@@ -181,6 +181,118 @@ pub enum WorkerCmd {
     },
 }
 
+async fn run_history_sync(
+    session: &Session,
+    threads: Vec<(String, String, bool)>,
+    store_path: &str,
+    gui_tx: &GuiTx,
+) -> GuiEvent {
+    use std::sync::atomic::Ordering;
+
+    let total = threads.len();
+    let mut added = 0;
+    let mut errors = Vec::new();
+
+    for (i, (id, name, is_group)) in threads.into_iter().enumerate() {
+        if crate::history_sync::CANCEL.load(Ordering::Relaxed) {
+            break;
+        }
+        if gui_tx
+            .send(GuiEvent::StatusUpdate(format!(
+                "Đang đồng bộ {}/{total} · {name}",
+                i + 1
+            )))
+            .is_err()
+        {
+            crate::history_sync::CANCEL.store(true, Ordering::Relaxed);
+            break;
+        }
+        let thread = Thread {
+            id,
+            name: name.clone(),
+            is_group,
+            ..Default::default()
+        };
+        let mut thread_added = 0;
+        let result = crate::history_sync::sync_thread(
+            session,
+            &thread,
+            store_path,
+            |page, page_added| {
+                thread_added += page_added;
+                if gui_tx
+                    .send(GuiEvent::StatusUpdate(format!(
+                        "Đang đồng bộ {}/{total} · {name} · trang {page} · thêm {thread_added} tin",
+                        i + 1
+                    )))
+                    .is_err()
+                {
+                    crate::history_sync::CANCEL.store(true, Ordering::Relaxed);
+                }
+            },
+        )
+        .await;
+        added += thread_added;
+        if let Err(error) = result {
+            let kind = if let Some(error) = error.downcast_ref::<crate::session::SessionError>() {
+                format!("lỗi máy chủ mã {}", error.code)
+            } else if error.downcast_ref::<reqwest::Error>().is_some() {
+                "lỗi kết nối".into()
+            } else if error.downcast_ref::<rusqlite::Error>().is_some() {
+                "lỗi lưu Store".into()
+            } else {
+                "lỗi xử lý lịch sử".into()
+            };
+            errors.push(format!("{name}: {kind}"));
+        }
+
+        let refresh_path = store_path.to_string();
+        let mut refresh_thread = Thread {
+            id: thread.id,
+            name: name.clone(),
+            is_group,
+            ..Default::default()
+        };
+        let refresh_result = tokio::task::spawn_blocking(move || -> anyhow::Result<Thread> {
+            let store = crate::store::MessageStore::open(&refresh_path)?;
+            store.hydrate_thread(&mut refresh_thread, crate::store::MessageStore::PRELOAD_MSGS)?;
+            Ok(refresh_thread)
+        })
+        .await;
+        match refresh_result {
+            Ok(Ok(refreshed)) => {
+                if gui_tx
+                    .send(GuiEvent::HistorySyncUpdated(vec![refreshed]))
+                    .is_err()
+                {
+                    crate::logger::log_error(
+                        "history_sync::gui_update",
+                        "GUI event receiver closed",
+                    );
+                }
+            }
+            Ok(Err(_)) | Err(_) => errors.push(format!("{name}: lỗi đọc Store")),
+        }
+    }
+
+    GuiEvent::SyncFinished {
+        added,
+        errors,
+        cancelled: crate::history_sync::CANCEL.load(Ordering::Relaxed),
+    }
+}
+
+fn load_local_history_page(
+    store_path: &str,
+    mut thread: Thread,
+    have: usize,
+) -> anyhow::Result<(Thread, bool)> {
+    let store = crate::store::MessageStore::open(store_path)?;
+    store.hydrate_thread(&mut thread, (have + 300).max(500))?;
+    let has_more = thread.messages.len() > have;
+    Ok((thread, has_more))
+}
+
 pub(super) static WORKER_TX: std::sync::OnceLock<tokio::sync::mpsc::UnboundedSender<WorkerCmd>> =
     std::sync::OnceLock::new();
 
@@ -1182,42 +1294,21 @@ pub(super) fn spawn_session_worker(session: Session, gui_tx: GuiTx, egui_ctx: eg
                             crate::history_sync::CANCEL.store(false, Ordering::Relaxed);
                             let session_clone = session.clone();
                             let gui_tx_clone = gui_tx.clone();
-                            let ctx_clone = egui_ctx.clone();
                             tokio::spawn(async move {
                                 let s = session_clone.lock().await.clone();
-                                let total = threads.len();
-                                let mut added = 0;
-                                let mut errors = Vec::new();
-                                for (i, (id, name, is_group)) in threads.into_iter().enumerate() {
-                                    if crate::history_sync::CANCEL.load(Ordering::Relaxed) {
-                                        break;
-                                    }
-                                    let _ = gui_tx_clone.send(GuiEvent::StatusUpdate(format!(
-                                        "Đang đồng bộ {}/{total} · {name}",
-                                        i + 1
-                                    )));
-                                    ctx_clone.request_repaint();
-                                    let mut t = Thread {
-                                        id,
-                                        name,
-                                        preview: String::new(),
-                                        time: String::new(),
-                                        avatar: None,
-                                        is_group,
-                                        messages: Vec::new(),
-                                        ..Default::default()
-                                    };
-                                    match crate::history_sync::sync_thread(&s, &mut t).await {
-                                        Ok(n) => added += n,
-                                        Err(e) => errors.push(format!("{}: {e}", t.name)),
-                                    }
+                                let finished = run_history_sync(
+                                    &s,
+                                    threads,
+                                    "zalo_history.db",
+                                    &gui_tx_clone,
+                                )
+                                .await;
+                                if gui_tx_clone.send(finished).is_err() {
+                                    crate::logger::log_error(
+                                        "history_sync::finish",
+                                        "GUI event receiver closed",
+                                    );
                                 }
-                                let _ = gui_tx_clone.send(GuiEvent::SyncFinished {
-                                    added,
-                                    errors,
-                                    cancelled: crate::history_sync::CANCEL.load(Ordering::Relaxed),
-                                });
-                                ctx_clone.request_repaint();
                                 crate::history_sync::RUNNING.store(false, Ordering::SeqCst);
                             });
                         }
@@ -1237,7 +1328,7 @@ pub(super) fn spawn_session_worker(session: Session, gui_tx: GuiTx, egui_ctx: eg
                                         .as_ref()
                                         .map(|l| !l.send2me_id.is_empty() && l.send2me_id == group_id)
                                         .unwrap_or(false);
-                                    let t = Thread {
+                                    let mut t = Thread {
                                         presentation: Default::default(),
                                         unread: Default::default(),
                                         id: group_id.clone(),
@@ -1248,17 +1339,25 @@ pub(super) fn spawn_session_worker(session: Session, gui_tx: GuiTx, egui_ctx: eg
                                         is_group: is_group && !is_send2me,
                                         messages: Vec::new(),
                                     };
-                                    let mut t_list = vec![t];
-                                    crate::store::load_history_into_threads(
-                                        "zalo_history.db",
-                                        &mut t_list,
-                                        (have + 300).max(500),
-                                    );
-                                    let Some(mut t) =
-                                        t_list.into_iter().find(|x| x.id == group_id)
-                                    else {
-                                        return;
-                                    };
+                                    let local_path = "zalo_history.db".to_string();
+                                    let local_thread = t.clone();
+                                    let local_result = tokio::task::spawn_blocking(move || {
+                                        load_local_history_page(&local_path, local_thread, have)
+                                    })
+                                    .await;
+                                    // Read committed history before asking Zalo for another page.
+                                    if let Ok(Ok((stored, has_more))) = local_result {
+                                        t = stored;
+                                        if has_more {
+                                            let loaded = t.messages.len() - have;
+                                            let _ = gui_tx_clone
+                                                .send(GuiEvent::LocalHistoryLoaded(t));
+                                            let _ = gui_tx_clone.send(GuiEvent::StatusUpdate(
+                                                format!("Đã tải thêm {loaded} tin nhắn đã lưu"),
+                                            ));
+                                            return;
+                                        }
+                                    }
                                     if !is_group && !is_send2me {
                                         let mut one_list = vec![t.clone()];
                                         if let Ok(resp) = crate::chat::get_last_msgs(
@@ -2757,3 +2856,593 @@ async fn apply_github_release_update(
     Ok(false)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::chat::{ChatMessage, Thread};
+    use crate::session::{LoginInfo, Session};
+    use std::{
+        io::{Read, Write},
+        net::{TcpListener, TcpStream},
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc,
+            Mutex,
+        },
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    static SYNC_TEST_LOCK: Mutex<()> = Mutex::new(());
+
+    fn temp_history_db(prefix: &str) -> String {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir()
+            .join(format!("{prefix}-{}-{nonce}.db", std::process::id()))
+            .to_string_lossy()
+            .into_owned()
+    }
+
+    fn history_page(id: &str, ts: i64) -> String {
+        serde_json::json!({
+            "error_code": 0,
+            "data": {
+                "groupMsgs": [{
+                    "msgId": id,
+                    "content": format!("message-{id}"),
+                    "ts": ts,
+                    "uidFrom": "peer-1"
+                }]
+            }
+        })
+        .to_string()
+    }
+
+    fn serve_pages(pages: Vec<String>) -> (String, std::thread::JoinHandle<Vec<String>>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let handle = std::thread::spawn(move || {
+            let mut requests = Vec::new();
+            for body in pages {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut request = [0; 4096];
+                let size = stream.read(&mut request).unwrap();
+                let request_path = String::from_utf8_lossy(&request[..size])
+                    .lines()
+                    .next()
+                    .and_then(|line| line.split_whitespace().nth(1))
+                    .and_then(|target| target.split('?').next())
+                    .unwrap_or_default()
+                    .to_string();
+                requests.push(request_path);
+                write!(
+                    stream,
+                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    body.len(),
+                    body
+                )
+                .unwrap();
+            }
+            requests
+        });
+        (format!("http://{address}"), handle)
+    }
+
+    struct PageServer {
+        url: String,
+        address: std::net::SocketAddr,
+        stop: Arc<AtomicBool>,
+        handle: Option<std::thread::JoinHandle<Vec<String>>>,
+    }
+
+    impl PageServer {
+        fn finish(mut self) -> Vec<String> {
+            self.stop.store(true, Ordering::Relaxed);
+            let _ = TcpStream::connect(self.address);
+            self.handle.take().unwrap().join().unwrap()
+        }
+    }
+
+    impl Drop for PageServer {
+        fn drop(&mut self) {
+            self.stop.store(true, Ordering::Relaxed);
+            let _ = TcpStream::connect(self.address);
+        }
+    }
+
+    fn serve_pages_until_stopped(
+        pages: Vec<String>,
+        cancel_after: Option<usize>,
+        error_after: Option<usize>,
+    ) -> PageServer {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let stop = Arc::new(AtomicBool::new(false));
+        let server_stop = Arc::clone(&stop);
+        let handle = std::thread::spawn(move || {
+            let mut requests = Vec::new();
+            for (index, body) in pages.into_iter().enumerate() {
+                let (mut stream, _) = listener.accept().unwrap();
+                if server_stop.load(Ordering::Relaxed) {
+                    return requests;
+                }
+                let mut request = [0; 4096];
+                let size = stream.read(&mut request).unwrap_or(0);
+                if size == 0 {
+                    return requests;
+                }
+                let request_path = String::from_utf8_lossy(&request[..size])
+                    .lines()
+                    .next()
+                    .and_then(|line| line.split_whitespace().nth(1))
+                    .and_then(|target| target.split('?').next())
+                    .unwrap_or_default()
+                    .to_string();
+                requests.push(request_path);
+                let status = if error_after == Some(index + 1) {
+                    "500 Internal Server Error"
+                } else {
+                    "200 OK"
+                };
+                if write!(
+                    stream,
+                    "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    body.len(),
+                    body
+                )
+                .is_err()
+                {
+                    return requests;
+                }
+                if cancel_after == Some(index + 1) {
+                    crate::history_sync::CANCEL.store(true, Ordering::Relaxed);
+                }
+            }
+            requests
+        });
+        PageServer {
+            url: format!("http://{address}"),
+            address,
+            stop,
+            handle: Some(handle),
+        }
+    }
+
+    fn message(id: &str, ts: i64) -> ChatMessage {
+        ChatMessage {
+            id: id.into(),
+            text: format!("message-{id}"),
+            ts,
+            is_outgoing: false,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn local_history_page_returns_only_when_the_store_has_older_rows() {
+        let _guard = SYNC_TEST_LOCK.lock().unwrap();
+        let db_path = temp_history_db("ctdozlite-local-history-page");
+        let stored = Thread {
+            id: "g123".into(),
+            name: "Test group".into(),
+            is_group: true,
+            messages: (0..600)
+                .map(|offset| message(&(1000 + offset).to_string(), 1000 + offset))
+                .collect(),
+            ..Default::default()
+        };
+        let other = Thread {
+            id: "g456".into(),
+            name: "Other group".into(),
+            is_group: true,
+            messages: vec![message("9000", 9000)],
+            ..Default::default()
+        };
+        let mut store = crate::store::MessageStore::open(&db_path).unwrap();
+        crate::store::persist_threads(&mut store, &[stored, other]).unwrap();
+        drop(store);
+
+        let request = Thread {
+            id: "g123".into(),
+            name: "Test group".into(),
+            is_group: true,
+            ..Default::default()
+        };
+        let (loaded, has_more) = load_local_history_page(&db_path, request.clone(), 20).unwrap();
+        assert!(has_more);
+        assert_eq!(loaded.messages.len(), 500);
+        assert!(loaded.messages.iter().all(|message| message.id != "9000"));
+        let (next, has_more) = load_local_history_page(&db_path, request.clone(), 500).unwrap();
+        assert!(has_more);
+        assert_eq!(next.messages.len(), 600);
+        let (_, has_more) = load_local_history_page(&db_path, request, 600).unwrap();
+        assert!(!has_more);
+
+        let _ = std::fs::remove_file(&db_path);
+        let _ = std::fs::remove_file(format!("{db_path}-wal"));
+        let _ = std::fs::remove_file(format!("{db_path}-shm"));
+    }
+
+    #[tokio::test]
+    async fn sync_history_persists_pages_and_refreshes_threads_without_unread_changes() {
+        let _guard = SYNC_TEST_LOCK.lock().unwrap();
+        crate::history_sync::CANCEL.store(false, Ordering::Relaxed);
+
+        let (cloud_host, server) = serve_pages(vec![
+            history_page("1001", 100),
+            serde_json::json!({
+                "error_code": 0,
+                "data": { "groupMsgs": [] }
+            })
+            .to_string(),
+        ]);
+        let mut session = Session::new(false, false, false).unwrap();
+        session.login = Some(LoginInfo {
+            uin: "account-1".into(),
+            ..Default::default()
+        });
+        session.secret_key = Some(vec![7; 16]);
+        session.domains.cloud_msg = cloud_host;
+
+        let db_path = temp_history_db("ctdozlite-history-sync");
+        let initial = Thread {
+            id: "g123".into(),
+            name: "Test group".into(),
+            is_group: true,
+            messages: vec![message("1003", 300)],
+            ..Default::default()
+        };
+        let mut store = crate::store::MessageStore::open(&db_path).unwrap();
+        let stored_only = Thread {
+            id: "g123".into(),
+            name: "Test group".into(),
+            is_group: true,
+            messages: vec![message("1002", 200)],
+            ..Default::default()
+        };
+        let other_stored = Thread {
+            id: "g456".into(),
+            name: "Other group".into(),
+            is_group: true,
+            messages: vec![message("9000", 400)],
+            ..Default::default()
+        };
+        crate::store::persist_threads(
+            &mut store,
+            &[initial.clone(), stored_only, other_stored],
+        )
+        .unwrap();
+        drop(store);
+
+        let mut other = Thread {
+            id: "g456".into(),
+            name: "Other group".into(),
+            is_group: true,
+            ..Default::default()
+        };
+        other.unread.marked_unread = true;
+        let mut ui_threads = vec![initial.clone(), other];
+        ui_threads[0].unread.marked_unread = true;
+        ui_threads[0].unread.unread_ids.insert("1003".into());
+        let unread_before = ui_threads[0].unread.clone();
+
+        let (event_tx, event_rx) = std::sync::mpsc::channel();
+        let gui_tx = GuiTx {
+            tx: event_tx,
+            ctx: egui::Context::default(),
+        };
+        let finished = run_history_sync(
+            &session,
+            vec![("g123".into(), "Test group".into(), true)],
+            &db_path,
+            &gui_tx,
+        )
+        .await;
+
+        let GuiEvent::SyncFinished {
+            added,
+            errors,
+            cancelled,
+        } = finished
+        else {
+            panic!("history sync must finish with its summary event");
+        };
+        assert_eq!(added, 1);
+        assert!(errors.is_empty());
+        assert!(!cancelled);
+
+        for event in event_rx.try_iter() {
+            if let GuiEvent::HistorySyncUpdated(updates) = event {
+                merge_history_sync_updates(&mut ui_threads, updates);
+            }
+        }
+        assert_eq!(
+            ui_threads.iter().map(|thread| thread.id.as_str()).collect::<Vec<_>>(),
+            vec!["g123", "g456"]
+        );
+        assert_eq!(
+            ui_threads[0]
+                .messages
+                .iter()
+                .map(|message| message.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["1001", "1002", "1003"]
+        );
+        assert_eq!(ui_threads[0].unread, unread_before);
+        assert!(ui_threads[1].messages.is_empty());
+        assert!(ui_threads[1].unread.marked_unread);
+
+        let store = crate::store::MessageStore::open(&db_path).unwrap();
+        assert_eq!(
+            store
+                .messages_for("g123", 10)
+                .unwrap()
+                .iter()
+                .map(|message| message.msg_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["1001", "1002", "1003"]
+        );
+        drop(store);
+        assert_eq!(server.join().unwrap().len(), 2);
+        let _ = std::fs::remove_file(&db_path);
+        let _ = std::fs::remove_file(format!("{db_path}-wal"));
+        let _ = std::fs::remove_file(format!("{db_path}-shm"));
+    }
+
+    #[tokio::test]
+    async fn history_sync_refresh_keeps_only_the_store_preload_in_memory() {
+        let _guard = SYNC_TEST_LOCK.lock().unwrap();
+        crate::history_sync::CANCEL.store(false, Ordering::Relaxed);
+
+        let empty_page = serde_json::json!({
+            "error_code": 0,
+            "data": { "groupMsgs": [] }
+        })
+        .to_string();
+        let (cloud_host, server) = serve_pages(vec![empty_page]);
+        let mut session = Session::new(false, false, false).unwrap();
+        session.login = Some(LoginInfo::default());
+        session.secret_key = Some(vec![7; 16]);
+        session.domains.cloud_msg = cloud_host;
+
+        let db_path = temp_history_db("ctdozlite-history-bounded-refresh");
+        let stored = Thread {
+            id: "g123".into(),
+            name: "Test group".into(),
+            is_group: true,
+            messages: (0..64)
+                .map(|offset| message(&(1000 + offset).to_string(), 1000 + offset))
+                .collect(),
+            ..Default::default()
+        };
+        let mut store = crate::store::MessageStore::open(&db_path).unwrap();
+        crate::store::persist_threads(&mut store, std::slice::from_ref(&stored)).unwrap();
+        drop(store);
+
+        let (event_tx, event_rx) = std::sync::mpsc::channel();
+        let gui_tx = GuiTx {
+            tx: event_tx,
+            ctx: egui::Context::default(),
+        };
+        let finished = run_history_sync(
+            &session,
+            vec![("g123".into(), "Test group".into(), true)],
+            &db_path,
+            &gui_tx,
+        )
+        .await;
+        let GuiEvent::SyncFinished { added, errors, .. } = finished else {
+            panic!("history sync must finish with its summary event");
+        };
+        assert_eq!(added, 0);
+        assert!(errors.is_empty());
+
+        let mut ui_threads = vec![Thread {
+            id: "g123".into(),
+            name: "Test group".into(),
+            is_group: true,
+            ..Default::default()
+        }];
+        for event in event_rx.try_iter() {
+            if let GuiEvent::HistorySyncUpdated(updates) = event {
+                merge_history_sync_updates(&mut ui_threads, updates);
+            }
+        }
+        assert_eq!(ui_threads[0].messages.len(), crate::store::MessageStore::PRELOAD_MSGS);
+        assert_eq!(ui_threads[0].messages.first().unwrap().id, "1044");
+        assert_eq!(ui_threads[0].messages.last().unwrap().id, "1063");
+        assert_eq!(server.join().unwrap().len(), 1);
+        let _ = std::fs::remove_file(&db_path);
+        let _ = std::fs::remove_file(format!("{db_path}-wal"));
+        let _ = std::fs::remove_file(format!("{db_path}-shm"));
+    }
+
+    #[tokio::test]
+    async fn sync_history_reaches_pages_beyond_the_old_per_thread_cap() {
+        let _guard = SYNC_TEST_LOCK.lock().unwrap();
+        crate::history_sync::CANCEL.store(false, Ordering::Relaxed);
+
+        let mut pages: Vec<String> = (0..21)
+            .map(|offset| history_page(&(2000 - offset).to_string(), 2000 - offset))
+            .collect();
+        pages.push(
+            serde_json::json!({
+                "error_code": 0,
+                "data": { "groupMsgs": [] }
+            })
+            .to_string(),
+        );
+        let server = serve_pages_until_stopped(pages, None, None);
+        let mut session = Session::new(false, false, false).unwrap();
+        session.login = Some(LoginInfo::default());
+        session.secret_key = Some(vec![7; 16]);
+        session.domains.cloud_msg = server.url.clone();
+        let db_path = temp_history_db("ctdozlite-history-pages");
+        let (event_tx, _event_rx) = std::sync::mpsc::channel();
+        let gui_tx = GuiTx {
+            tx: event_tx,
+            ctx: egui::Context::default(),
+        };
+
+        let finished = run_history_sync(
+            &session,
+            vec![("g123".into(), "Test group".into(), true)],
+            &db_path,
+            &gui_tx,
+        )
+        .await;
+
+        let GuiEvent::SyncFinished {
+            added,
+            errors,
+            cancelled,
+        } = finished
+        else {
+            panic!("history sync must finish with its summary event");
+        };
+        let requests = server.finish();
+        assert_eq!(
+            requests.len(),
+            22,
+            "added={added}, errors={errors:?}, requests={requests:#?}"
+        );
+        assert_eq!(added, 21);
+        assert!(errors.is_empty());
+        assert!(!cancelled);
+        let store = crate::store::MessageStore::open(&db_path).unwrap();
+        assert_eq!(store.messages_for("g123", 100).unwrap().len(), 21);
+        drop(store);
+        let _ = std::fs::remove_file(&db_path);
+        let _ = std::fs::remove_file(format!("{db_path}-wal"));
+        let _ = std::fs::remove_file(format!("{db_path}-shm"));
+    }
+
+    #[tokio::test]
+    async fn cancelled_history_sync_keeps_saved_pages_for_the_next_run() {
+        let _guard = SYNC_TEST_LOCK.lock().unwrap();
+        crate::history_sync::CANCEL.store(false, Ordering::Relaxed);
+
+        let server = serve_pages_until_stopped(
+            vec![
+                history_page("1002", 200),
+                history_page("1001", 100),
+                serde_json::json!({
+                    "error_code": 0,
+                    "data": { "groupMsgs": [] }
+                })
+                .to_string(),
+            ],
+            Some(1),
+            None,
+        );
+        let mut session = Session::new(false, false, false).unwrap();
+        session.login = Some(LoginInfo::default());
+        session.secret_key = Some(vec![7; 16]);
+        session.domains.cloud_msg = server.url.clone();
+        let db_path = temp_history_db("ctdozlite-history-resume");
+        let (event_tx, _event_rx) = std::sync::mpsc::channel();
+        let gui_tx = GuiTx {
+            tx: event_tx,
+            ctx: egui::Context::default(),
+        };
+        let threads = vec![("g123".into(), "Test group".into(), true)];
+
+        let first = run_history_sync(&session, threads.clone(), &db_path, &gui_tx).await;
+        let GuiEvent::SyncFinished {
+            added: first_added,
+            errors: first_errors,
+            cancelled: first_cancelled,
+        } = first
+        else {
+            panic!("first run must finish with a summary event");
+        };
+        assert_eq!(first_added, 1);
+        assert!(first_errors.is_empty());
+        assert!(first_cancelled);
+
+        let after_cancel = crate::store::MessageStore::open(&db_path).unwrap();
+        assert_eq!(after_cancel.messages_for("g123", 10).unwrap().len(), 1);
+        drop(after_cancel);
+
+        crate::history_sync::CANCEL.store(false, Ordering::Relaxed);
+        let second = run_history_sync(&session, threads, &db_path, &gui_tx).await;
+        let GuiEvent::SyncFinished {
+            added: second_added,
+            errors: second_errors,
+            cancelled: second_cancelled,
+        } = second
+        else {
+            panic!("second run must finish with a summary event");
+        };
+        assert_eq!(second_added, 1);
+        assert!(second_errors.is_empty());
+        assert!(!second_cancelled);
+        let requests = server.finish();
+        assert_eq!(requests.len(), 3);
+        let resumed = crate::store::MessageStore::open(&db_path).unwrap();
+        assert_eq!(
+            resumed
+                .messages_for("g123", 10)
+                .unwrap()
+                .iter()
+                .map(|message| message.msg_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["1001", "1002"]
+        );
+        drop(resumed);
+        let _ = std::fs::remove_file(&db_path);
+        let _ = std::fs::remove_file(format!("{db_path}-wal"));
+        let _ = std::fs::remove_file(format!("{db_path}-shm"));
+    }
+
+    #[tokio::test]
+    async fn history_sync_reports_partial_saves_without_exposing_request_details() {
+        let _guard = SYNC_TEST_LOCK.lock().unwrap();
+        crate::history_sync::CANCEL.store(false, Ordering::Relaxed);
+
+        let server = serve_pages_until_stopped(
+            vec![history_page("1002", 200), history_page("1001", 100)],
+            None,
+            Some(2),
+        );
+        let mut session = Session::new(false, false, false).unwrap();
+        session.login = Some(LoginInfo::default());
+        session.secret_key = Some(vec![7; 16]);
+        session.domains.cloud_msg = server.url.clone();
+        let db_path = temp_history_db("ctdozlite-history-partial");
+        let (event_tx, _event_rx) = std::sync::mpsc::channel();
+        let gui_tx = GuiTx {
+            tx: event_tx,
+            ctx: egui::Context::default(),
+        };
+
+        let finished =
+            run_history_sync(&session, vec![("g123".into(), "Test group".into(), true)], &db_path, &gui_tx)
+                .await;
+        let GuiEvent::SyncFinished {
+            added,
+            errors,
+            cancelled,
+        } = finished
+        else {
+            panic!("sync errors must be summarized");
+        };
+        assert_eq!(added, 1);
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].contains("Test group"));
+        assert!(!errors[0].contains("params="));
+        assert!(!errors[0].contains("127.0.0.1"));
+        assert!(!cancelled);
+
+        let requests = server.finish();
+        assert_eq!(requests.len(), 2);
+        let store = crate::store::MessageStore::open(&db_path).unwrap();
+        assert_eq!(store.messages_for("g123", 10).unwrap().len(), 1);
+        drop(store);
+        let _ = std::fs::remove_file(&db_path);
+        let _ = std::fs::remove_file(format!("{db_path}-wal"));
+        let _ = std::fs::remove_file(format!("{db_path}-shm"));
+    }
+}

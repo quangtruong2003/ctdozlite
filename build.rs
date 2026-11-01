@@ -194,12 +194,12 @@ fn build_vs_version_info(pkg_ver: &str) -> Vec<u8> {
     let ver_quad = format!("{major}.{minor}.{patch}.{build}");
     let string_pairs = [
         ("CompanyName", "ctdoteam1110"),
-        ("FileDescription", "ctdozlite Native Desktop Client"),
+        ("FileDescription", "Best Zalo Native Desktop Client"),
         ("FileVersion", ver_quad.as_str()),
         ("InternalName", "ctdozlite.exe"),
         ("LegalCopyright", "Copyright (c) 2026 ctdoteam1110 (MIT OR Apache-2.0)"),
         ("OriginalFilename", "ctdozlite.exe"),
-        ("ProductName", "ctdozlite"),
+        ("ProductName", "Best Zalo"),
         ("ProductVersion", pkg_ver),
     ];
 
@@ -238,7 +238,7 @@ fn build_windows_manifest(pkg_ver: &str) -> String {
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity type="win32" name="ctdoteam1110.ctdozlite" version="{major}.{minor}.{patch}.0" processorArchitecture="amd64"/>
-  <description>ctdozlite Native Desktop Client</description>
+  <description>Best Zalo Native Desktop Client</description>
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
       <requestedPrivileges>
