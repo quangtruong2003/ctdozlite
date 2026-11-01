@@ -188,14 +188,14 @@ pub(super) fn render_call_card_widget(
         ui.set_width(card_width);
         ui.horizontal(|ui| {
             let (icon_rect, _) = ui.allocate_exact_size(Vec2::new(40.0, 40.0), Sense::hover());
-            ui.painter().circle_filled(
-                icon_rect.center(),
-                20.0,
+            ui.painter().rect_filled(
+                icon_rect,
+                Rounding::same(2.0),
                 accent.linear_multiply(if pal.is_dark { 0.18 } else { 0.14 }),
             );
-            ui.painter().circle_stroke(
-                icon_rect.center(),
-                20.0,
+            ui.painter().rect_stroke(
+                icon_rect,
+                Rounding::same(2.0),
                 Stroke::new(1.2_f32, accent.linear_multiply(0.55)),
             );
             if card.is_video {
@@ -261,7 +261,7 @@ pub(super) fn render_call_card_widget(
         )
         .fill(pal.primary)
         .stroke(Stroke::new(1.0_f32, pal.primary_hover))
-        .rounding(Rounding::same(7.0))
+        .rounding(Rounding::same(2.0))
         .min_size(Vec2::new(card_width, 30.0));
 
         if ui
@@ -917,24 +917,16 @@ pub(super) fn render_date_divider(ui: &mut egui::Ui, msg: &ChatMessage, pal: &Th
         if left_space > 0.0 {
             ui.add_space(left_space);
         }
-        let pill_bg = if pal.is_dark {
-            Color32::from_rgba_unmultiplied(30, 34, 41, 235)
-        } else {
-            Color32::from_rgba_unmultiplied(219, 228, 240, 215)
-        };
+        let pill_bg = pal.bg_hover;
         egui::Frame::none()
             .fill(pill_bg)
-            .rounding(Rounding::same(10.0))
+            .rounding(Rounding::same(2.0))
             .inner_margin(Margin::symmetric(13.0, 3.5))
             .show(ui, |ui| {
                 ui.label(
                     RichText::new(label)
                         .size(11.4)
-                        .color(if pal.is_dark {
-                            Color32::from_rgb(215, 218, 224)
-                        } else {
-                            pal.text_secondary
-                        })
+                        .color(pal.text_secondary)
                         .strong(),
                 );
             });
@@ -974,7 +966,7 @@ pub(super) fn render_system_notice_pill(ui: &mut egui::Ui, msg: &ChatMessage, pa
         egui::Frame::none()
             .fill(pal.bg_elevated)
             .stroke(Stroke::new(1.0_f32, pal.border))
-            .rounding(Rounding::same(12.0))
+            .rounding(Rounding::same(2.0))
             .inner_margin(Margin::symmetric(12.0, 4.0))
             .show(ui, |ui| {
                 ui.label(
@@ -1079,7 +1071,7 @@ pub(super) fn render_message_body(
                 let disp_h = (th_f * scale).clamp(95.0, max_h);
                 let img = egui::Image::new(tex)
                     .fit_to_exact_size(Vec2::new(disp_w, disp_h))
-                    .rounding(Rounding::same(12.0))
+                    .rounding(Rounding::same(2.0))
                     .sense(Sense::click());
                 let resp = ui
                     .add(img)
@@ -1087,7 +1079,7 @@ pub(super) fn render_message_body(
                     .on_hover_text("Bấm để phóng to hình ảnh");
                 ui.painter().rect_stroke(
                     resp.rect,
-                    Rounding::same(12.0),
+                    Rounding::same(2.0),
                     Stroke::new(
                         if resp.hovered() { 1.6_f32 } else { 1.0_f32 },
                         if resp.hovered() {
@@ -1100,14 +1092,14 @@ pub(super) fn render_message_body(
                 if resp.hovered() {
                     ui.painter().rect_filled(
                         resp.rect,
-                        Rounding::same(12.0),
-                        Color32::from_rgba_unmultiplied(6, 10, 20, 88),
+                        Rounding::same(2.0),
+                        Color32::from_black_alpha(88),
                     );
                     let pill_r = Rect::from_center_size(resp.rect.center(), Vec2::new(108.0, 26.0));
                     ui.painter().rect_filled(
                         pill_r,
-                        Rounding::same(13.0),
-                        Color32::from_rgba_unmultiplied(15, 23, 42, 225),
+                        Rounding::same(2.0),
+                        Color32::from_black_alpha(225),
                     );
                     ui.painter().text(
                         pill_r.center(),
@@ -1129,7 +1121,7 @@ pub(super) fn render_message_body(
             } else {
                 let ph_frame = egui::Frame::none()
                     .fill(text_col.linear_multiply(0.08))
-                    .rounding(Rounding::same(10.0))
+                    .rounding(Rounding::same(2.0))
                     .inner_margin(Margin::symmetric(12.0, 10.0))
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
@@ -1193,11 +1185,7 @@ pub(super) fn render_message_body(
             .link_src
             .as_deref()
             .unwrap_or(if is_vid { "Video đính kèm" } else { "Tập tin đính kèm" });
-        let link_col = if pal.is_dark {
-            Color32::from_rgb(97, 175, 239)
-        } else {
-            pal.primary
-        };
+        let link_col = pal.primary_hover;
         let resp = ui
             .add(
                 egui::Label::new(RichText::new(title_str).size(13.8).color(text_col).strong())
@@ -1232,11 +1220,7 @@ pub(super) fn render_message_body(
         return None;
     };
 
-    let link_col = if pal.is_dark {
-        Color32::from_rgb(97, 175, 239) // #61AFEF Zalo/Atom clean link blue
-    } else {
-        pal.primary
-    };
+    let link_col = pal.primary_hover;
 
     // Auto-enrich link metadata if title or thumbnail is missing/expired
     let needs_meta_enrich = msg.link_title.is_none()
@@ -1292,7 +1276,7 @@ pub(super) fn render_message_body(
             let img_h = (thumb_w * aspect).min(132.0);
             let img = egui::Image::new(tex)
                 .fit_to_exact_size(Vec2::new(thumb_w, img_h))
-                .rounding(Rounding::same(6.0))
+                .rounding(Rounding::same(2.0))
                 .sense(Sense::click());
             if ui
                 .add(img)
@@ -1640,12 +1624,10 @@ pub(super) fn render_chat_bubble(
                         Color32::from_rgb(34, 197, 94).linear_multiply(0.55)
                     };
                     Stroke::new(1.2_f32, border_col)
-                } else if !pal.is_dark {
-                    Stroke::new(1.0_f32, Color32::from_rgb(186, 214, 255))
                 } else {
-                    Stroke::new(1.0_f32, Color32::from_rgb(53, 76, 104))
+                    Stroke::new(1.0_f32, pal.border)
                 };
-                let rounding = Rounding::same(8.0);
+                let rounding = Rounding::same(2.0);
 
                 let mut card_action = None;
                 let fr = egui::Frame::none()
@@ -1767,7 +1749,7 @@ pub(super) fn render_chat_bubble(
             } else {
                 Stroke::new(1.0_f32, pal.bubble_in_border)
             };
-            let rounding = Rounding::same(8.0);
+            let rounding = Rounding::same(2.0);
 
             ui.vertical(|ui| {
                 ui.set_max_width(total_bubble_w);
@@ -1896,7 +1878,7 @@ pub(super) fn bubble_context_menu(
                 if let Some(tex) = emoji_textures.get(key) {
                     let img = egui::Image::new(tex).fit_to_exact_size(Vec2::splat(24.0));
                     let btn = egui::ImageButton::new(img)
-                        .rounding(Rounding::same(6.0));
+                        .rounding(Rounding::same(2.0));
                     if ui.add(btn).on_hover_text(tooltip).clicked() {
                         action = Some(BubbleAction::React(code));
                         ui.close_menu();
@@ -2013,11 +1995,7 @@ pub(super) fn render_quote_block(
     } else {
         (pal.bubble_in_text, pal.bubble_in_meta)
     };
-    let bar_col = if outgoing && pal.is_dark {
-        Color32::from_rgb(147, 197, 253)
-    } else {
-        pal.primary
-    };
+    let bar_col = pal.primary_hover;
     let bg_col = if outgoing && pal.is_dark {
         Color32::from_rgba_unmultiplied(0, 0, 0, 42)
     } else if outgoing {
@@ -2028,7 +2006,7 @@ pub(super) fn render_quote_block(
     let inner_col_w = (max_w - 28.0).max(72.0);
     egui::Frame::none()
         .fill(bg_col)
-        .rounding(Rounding::same(7.0))
+        .rounding(Rounding::same(2.0))
         .inner_margin(Margin::symmetric(8.0, 5.0))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
@@ -2079,7 +2057,7 @@ pub(super) fn render_reactions(
             egui::Frame::none()
                 .fill(pal.primary.linear_multiply(0.18))
                 .stroke(Stroke::new(1.0_f32, pal.primary))
-                .rounding(Rounding::same(8.0))
+                .rounding(Rounding::same(2.0))
                 .inner_margin(Margin::symmetric(5.0, 2.0))
                 .show(ui, |ui| {
                     ui.label(
@@ -2095,7 +2073,7 @@ pub(super) fn render_reactions(
             egui::Frame::none()
                 .fill(Color32::from_rgb(234, 179, 8).linear_multiply(0.2))
                 .stroke(Stroke::new(1.0_f32, Color32::from_rgb(234, 179, 8)))
-                .rounding(Rounding::same(8.0))
+                .rounding(Rounding::same(2.0))
                 .inner_margin(Margin::symmetric(5.0, 2.0))
                 .show(ui, |ui| {
                     ui.label(
@@ -2111,7 +2089,7 @@ pub(super) fn render_reactions(
             egui::Frame::none()
                 .fill(pal.bg_elevated)
                 .stroke(Stroke::new(1.0_f32, pal.border))
-                .rounding(Rounding::same(12.0))
+                .rounding(Rounding::same(2.0))
                 .inner_margin(Margin::symmetric(6.0, 2.0))
                 .show(ui, |ui| {
                     ui.horizontal(|ui| {

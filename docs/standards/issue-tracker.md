@@ -1,6 +1,6 @@
 # Issue Tracking & Triage Standards
 
-Issues, specs and tickets live in **GitHub Issues** for `ctdoteam1110/ctdozlite`. Use the `gh` CLI for every operation.
+Issues, specs and tickets live in **GitHub Issues** for `quangtruong2003/ctdozlite`. Use the `gh` CLI for every operation and explicitly target this repository.
 
 > Source of truth for ticket state. Local markdown notes under `re-notes/` are evidence, never tickets.
 
@@ -8,12 +8,12 @@ Issues, specs and tickets live in **GitHub Issues** for `ctdoteam1110/ctdozlite`
 
 | Operation | Command | Notes |
 | :--- | :--- | :--- |
-| Create issue | `gh issue create --title "..." --body "..."` | Use a heredoc for structured bodies. |
-| View issue | `gh issue view <number> --comments` | Description, labels and discussion. |
-| List issues | `gh issue list --state open --label "<label>"` | Filter by lifecycle, type or area. |
-| Comment | `gh issue comment <number> --body "..."` | Post updates, link PRs, attach evidence. |
-| Apply labels | `gh issue edit <number> --add-label "<label>"` | Update type/area/priority. |
-| Close issue | `gh issue close <number> --comment "..."` | Always close with a resolution summary. |
+| Create issue | `gh issue create --repo quangtruong2003/ctdozlite --title "..." --body "..."` | Use a heredoc for structured bodies. |
+| View issue | `gh issue view <number> --repo quangtruong2003/ctdozlite --comments` | Description, labels and discussion. |
+| List issues | `gh issue list --repo quangtruong2003/ctdozlite --state open --label "<label>"` | Filter by lifecycle, type or area. |
+| Comment | `gh issue comment <number> --repo quangtruong2003/ctdozlite --body "..."` | Post updates, link PRs, attach evidence. |
+| Apply labels | `gh issue edit <number> --repo quangtruong2003/ctdozlite --add-label "<label>"` | Update type/area/priority. |
+| Close issue | `gh issue close <number> --repo quangtruong2003/ctdozlite --comment "..."` | Always close with a resolution summary. |
 
 ## 2. Label Taxonomy
 
@@ -69,20 +69,20 @@ Canonical vocabulary consumed by `/triage`. Do not introduce synonyms.
 1. Create the child:
 
    ```bash
-   gh issue create --title "task(<area>): <summary>" --body "..." --label "type:task,area:<area>"
+   gh issue create --repo quangtruong2003/ctdozlite --title "task(<area>): <summary>" --body "..." --label "type:task,area:<area>"
    ```
 
 2. Link it to the parent:
 
    ```bash
-   CHILD_ID=$(gh api repos/ctdoteam1110/ctdozlite/issues/<child_number> --jq .id)
-   gh api --method POST repos/ctdoteam1110/ctdozlite/issues/<parent_number>/sub_issues -F sub_issue_id=$CHILD_ID
+   CHILD_ID=$(gh api repos/quangtruong2003/ctdozlite/issues/<child_number> --jq .id)
+   gh api --method POST repos/quangtruong2003/ctdozlite/issues/<parent_number>/sub_issues -F sub_issue_id=$CHILD_ID
    ```
 
 3. Query children:
 
    ```bash
-   gh api repos/ctdoteam1110/ctdozlite/issues/<parent_number>/sub_issues \
+   gh api repos/quangtruong2003/ctdozlite/issues/<parent_number>/sub_issues \
      --jq '.[] | "#\(.number): \(.title)"'
    ```
 

@@ -62,7 +62,7 @@ if [[ "$OS_NAME" == "Darwin" ]]; then
   codesign --force --deep --sign - "$STAGE_DIR/ctdozlite.app"
   ln -s /Applications "$STAGE_DIR/Applications"
 
-  hdiutil create -volname "ctdozlite" -srcfolder "$STAGE_DIR" -ov -fs HFS+ -format UDZO "$DMG_OUT"
+  hdiutil create -volname "Best Zalo" -srcfolder "$STAGE_DIR" -ov -fs HFS+ -format UDZO "$DMG_OUT"
   echo "=== Built $DMG_OUT ==="
 else
   cargo build --release --locked --bin ctdozlite

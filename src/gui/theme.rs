@@ -1,7 +1,7 @@
 use super::*;
 
 // ---------------------------------------------------------------------------
-// Semantic Design System Tokens (UI/UX Pro Max — Minimalism & Swiss Style)
+// Neutral semantic design tokens for the native GUI.
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Copy)]
@@ -34,64 +34,62 @@ pub(super) struct ThemePalette {
 
 impl ThemePalette {
     pub(super) fn dark() -> Self {
-        // Official Atom One Dark (`one-dark-ui` + `one-dark-syntax`) color system
         Self {
             is_dark: true,
-            bg_app: Color32::from_rgb(24, 26, 31),          // #181A1F Activity Bar & Title Bar
-            bg_sidebar: Color32::from_rgb(33, 37, 43),      // #21252B Tree-View / Sidebar / Header
-            bg_chat_canvas: Color32::from_rgb(40, 44, 52),  // #282C34 Atom One Dark Editor Canvas
-            bg_elevated: Color32::from_rgb(44, 49, 58),     // #2C313A Elevated Card / Modal / Popover
-            bg_hover: Color32::from_rgb(50, 56, 66),        // #323842 List Hover Surface
-            bg_selected: Color32::from_rgb(58, 63, 75),     // #3A3F4B Active Selection Row
-            bg_input: Color32::from_rgb(29, 31, 35),        // #1D1F23 Input / Search Well
-            border: Color32::from_rgb(52, 57, 66),          // #343942 Subtle Panel Divider
-            text_primary: Color32::from_rgb(215, 218, 224), // #D7DAE0 Bright Foreground
-            text_secondary: Color32::from_rgb(171, 178, 191), // #ABB2BF Atom @mono-1
-            text_muted: Color32::from_rgb(118, 126, 142),   // #767E8E Atom @mono-3 (readable muted)
-            primary: Color32::from_rgb(82, 139, 255),       // #528BFF Atom UI Accent Blue
-            primary_hover: Color32::from_rgb(97, 175, 239), // #61AFEF Atom @hue-2 Cyan-Blue
-            accent_online: Color32::from_rgb(152, 195, 121), // #98C379 Atom @hue-4 Green
-            danger: Color32::from_rgb(224, 108, 117),       // #E06C75 Atom @hue-5 Coral Red
-            warning: Color32::from_rgb(229, 192, 123),      // #E5C07B Atom @hue-62 Warm Gold
-            bubble_out_bg: Color32::from_rgb(37, 55, 77),   // #25374D Zalo Dark Slate-Navy Outgoing Bubble
-            bubble_out_text: Color32::from_rgb(235, 240, 246), // #EBF0F6
-            bubble_out_meta: Color32::from_rgb(154, 171, 192), // #9AABC0
-            bubble_in_bg: Color32::from_rgb(50, 56, 66),    // #323842 Atom Elevated Incoming Bubble
-            bubble_in_border: Color32::from_rgb(62, 68, 81), // #3E4451 Atom Gutter Border
-            bubble_in_text: Color32::from_rgb(215, 218, 224), // #D7DAE0
-            bubble_in_meta: Color32::from_rgb(142, 150, 165), // #8E96A5
+            bg_app: Color32::from_rgb(9, 9, 11),
+            bg_sidebar: Color32::from_rgb(9, 9, 11),
+            bg_chat_canvas: Color32::from_rgb(9, 9, 11),
+            bg_elevated: Color32::from_rgb(24, 24, 27),
+            bg_hover: Color32::from_rgb(39, 39, 42),
+            bg_selected: Color32::from_rgb(39, 39, 42),
+            bg_input: Color32::from_rgb(9, 9, 11),
+            border: Color32::from_rgb(63, 63, 70),
+            text_primary: Color32::from_rgb(250, 250, 250),
+            text_secondary: Color32::from_rgb(212, 212, 216),
+            text_muted: Color32::from_rgb(161, 161, 170),
+            primary: Color32::from_rgb(82, 82, 91),
+            primary_hover: Color32::from_rgb(113, 113, 122),
+            accent_online: Color32::from_rgb(34, 197, 94),
+            danger: Color32::from_rgb(239, 68, 68),
+            warning: Color32::from_rgb(234, 179, 8),
+            bubble_out_bg: Color32::from_rgb(39, 39, 42),
+            bubble_out_text: Color32::from_rgb(250, 250, 250),
+            bubble_out_meta: Color32::from_rgb(212, 212, 216),
+            bubble_in_bg: Color32::from_rgb(24, 24, 27),
+            bubble_in_border: Color32::from_rgb(63, 63, 70),
+            bubble_in_text: Color32::from_rgb(250, 250, 250),
+            bubble_in_meta: Color32::from_rgb(161, 161, 170),
         }
     }
 
     pub(super) fn light() -> Self {
         Self {
             is_dark: false,
-            bg_app: Color32::from_rgb(255, 255, 255),      // #FFFFFF
-            bg_sidebar: Color32::from_rgb(255, 255, 255),  // #FFFFFF
-            bg_chat_canvas: Color32::from_rgb(235, 240, 247), // Authentic Zalo PC cool blue-gray canvas
-            bg_elevated: Color32::from_rgb(255, 255, 255), // #FFFFFF
-            bg_hover: Color32::from_rgb(241, 245, 249),    // #F1F5F9
-            bg_selected: Color32::from_rgb(229, 241, 255), // #E5F1FF Zalo active row
-            bg_input: Color32::from_rgb(248, 250, 252),    // #F8FAFC
-            border: Color32::from_rgb(226, 232, 240),      // #E2E8F0
-            text_primary: Color32::from_rgb(15, 23, 42),   // #0F172A (16.1:1 contrast)
-            text_secondary: Color32::from_rgb(71, 85, 105), // #475569 (7.2:1 contrast)
-            text_muted: Color32::from_rgb(100, 116, 139),  // #64748B (4.6:1 contrast)
-            primary: Color32::from_rgb(0, 104, 255),       // #0068FF Zalo Blue
-            primary_hover: Color32::from_rgb(37, 99, 235), // #2563EB
-            accent_online: Color32::from_rgb(5, 150, 105), // #059669 Emerald
-            danger: Color32::from_rgb(220, 38, 38),        // #DC2626
-            warning: Color32::from_rgb(217, 119, 6),       // #D97706
-            bubble_out_bg: Color32::from_rgb(229, 239, 255), // Zalo Desktop Light Outgoing (#E5EFFF)
-            bubble_out_text: Color32::from_rgb(15, 23, 42),  // Crisp dark text on light blue (14:1)
-            bubble_out_meta: Color32::from_rgb(71, 92, 122),
+            bg_app: Color32::WHITE,
+            bg_sidebar: Color32::WHITE,
+            bg_chat_canvas: Color32::WHITE,
+            bg_elevated: Color32::WHITE,
+            bg_hover: Color32::from_rgb(244, 244, 245),
+            bg_selected: Color32::from_rgb(244, 244, 245),
+            bg_input: Color32::WHITE,
+            border: Color32::from_rgb(228, 228, 231),
+            text_primary: Color32::from_rgb(9, 9, 11),
+            text_secondary: Color32::from_rgb(63, 63, 70),
+            text_muted: Color32::from_rgb(113, 113, 122),
+            primary: Color32::from_rgb(24, 24, 27),
+            primary_hover: Color32::from_rgb(39, 39, 42),
+            accent_online: Color32::from_rgb(22, 163, 74),
+            danger: Color32::from_rgb(220, 38, 38),
+            warning: Color32::from_rgb(202, 138, 4),
+            bubble_out_bg: Color32::from_rgb(244, 244, 245),
+            bubble_out_text: Color32::from_rgb(9, 9, 11),
+            bubble_out_meta: Color32::from_rgb(82, 82, 91),
             bubble_in_bg: Color32::WHITE,
-            bubble_in_border: Color32::from_rgb(216, 224, 236),
-            bubble_in_text: Color32::from_rgb(15, 23, 42),
-            bubble_in_meta: Color32::from_rgb(100, 116, 139),
+            bubble_in_border: Color32::from_rgb(228, 228, 231),
+            bubble_in_text: Color32::from_rgb(9, 9, 11),
+            bubble_in_meta: Color32::from_rgb(113, 113, 122),
         }
     }
-
     pub(super) fn apply_to_ctx(&self, ctx: &egui::Context) {
         let mut style = (*ctx.style()).clone();
         let mut visuals = if self.is_dark {
@@ -102,13 +100,18 @@ impl ThemePalette {
 
         visuals.panel_fill = self.bg_app;
         visuals.window_fill = self.bg_elevated;
+        visuals.window_rounding = Rounding::same(2.0);
+        visuals.menu_rounding = Rounding::same(2.0);
         visuals.extreme_bg_color = self.bg_input;
         visuals.faint_bg_color = self.bg_hover;
+        visuals.hyperlink_color = self.primary_hover;
+        visuals.warn_fg_color = self.warning;
+        visuals.error_fg_color = self.danger;
         visuals.override_text_color = Some(self.text_primary);
         visuals.selection.bg_fill = self.primary.linear_multiply(if self.is_dark { 0.45 } else { 0.22 });
         visuals.selection.stroke = Stroke::new(1.5_f32, self.primary);
 
-        let r = Rounding::same(8.0);
+        let r = Rounding::same(2.0);
         visuals.widgets.noninteractive.bg_fill = self.bg_app;
         visuals.widgets.noninteractive.bg_stroke = Stroke::new(1.0_f32, self.border);
         visuals.widgets.noninteractive.fg_stroke = Stroke::new(1.0_f32, self.text_primary);
@@ -224,7 +227,7 @@ impl ThemePalette {
             })
         };
         let doc = serde_json::json!({
-            "_comment": "ctdozlite custom theme file (#7). Edit hex colors (#RRGGBB) under dark/light and reload in Settings.",
+            "_comment": "Best Zalo custom theme file (#7). Edit hex colors (#RRGGBB) under dark/light and reload in Settings.",
             "dark": to_map(&d),
             "light": to_map(&l),
         });
@@ -255,14 +258,10 @@ pub(super) fn format_hex_color(c: Color32) -> String {
 
 pub(super) fn avatar_color_for(name: &str, is_group: bool) -> Color32 {
     const PALETTE: &[Color32] = &[
-        Color32::from_rgb(64, 120, 192),  // Atom Blue (#4078C0)
-        Color32::from_rgb(56, 148, 160),  // Atom Cyan (#3894A0)
-        Color32::from_rgb(152, 88, 178),  // Atom Purple (#9858B2)
-        Color32::from_rgb(190, 80, 70),   // Atom Red (#BE5046)
-        Color32::from_rgb(184, 118, 62),  // Atom Orange (#B8763E)
-        Color32::from_rgb(98, 148, 72),   // Atom Green (#629448)
-        Color32::from_rgb(82, 116, 196),  // Atom Indigo
-        Color32::from_rgb(72, 138, 182),  // Atom Cerulean
+        Color32::from_rgb(64, 64, 64),
+        Color32::from_rgb(77, 77, 77),
+        Color32::from_rgb(90, 90, 90),
+        Color32::from_rgb(103, 103, 103),
     ];
     let mut hash: usize = if is_group { 3 } else { 0 };
     for b in name.bytes() {
@@ -795,24 +794,19 @@ pub(super) fn render_toggle_switch(ui: &mut egui::Ui, value: &mut bool, pal: &Th
 
     let bg = if *value {
         pal.primary
-    } else if pal.is_dark {
-        Color32::from_rgb(58, 63, 75)
     } else {
-        Color32::from_rgb(203, 213, 225)
+        pal.border
     };
-    ui.painter().rect_filled(rect, Rounding::same(10.0), bg);
+    ui.painter().rect_filled(rect, Rounding::same(2.0), bg);
 
-    let knob_radius = 7.5_f32;
     let knob_x = if *value {
         rect.right() - 10.0
     } else {
         rect.left() + 10.0
     };
-    ui.painter().circle_filled(
-        Pos2::new(knob_x, rect.center().y),
-        knob_radius,
-        Color32::WHITE,
-    );
+    let knob_rect = Rect::from_center_size(Pos2::new(knob_x, rect.center().y), Vec2::splat(15.0));
+    ui.painter()
+        .rect_filled(knob_rect, Rounding::same(2.0), Color32::WHITE);
     resp
 }
 

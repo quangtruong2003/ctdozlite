@@ -4,7 +4,8 @@
 //! `zalo_history.db`, so a second run resumes where the first stopped. One thread at a time with
 //! a pause between pages to stay clear of Zalo's rate limits.
 //!
-//! 1-1 chats are out of scope: Zalo exposes no HTTP history for them.
+//! One-to-one history remains unsupported until a request/response route is verified; see
+//! re-notes/09_history_sync_one_to_one.md.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -15,10 +16,7 @@ use crate::chat::{self, Thread};
 use crate::session::Session;
 use crate::store::{self, MessageStore};
 
-const DB_PATH: &str = "zalo_history.db";
 const PAGE: u32 = 50;
-/// Pages per thread per run (1 000 messages); run again to go further back.
-const MAX_PAGES: usize = 20;
 const PAUSE: Duration = Duration::from_millis(400);
 
 /// Set by the GUI's "Dừng" button; checked between pages.
@@ -26,37 +24,64 @@ pub static CANCEL: AtomicBool = AtomicBool::new(false);
 /// True while a sync runs, so a second click doesn't start a parallel one.
 pub static RUNNING: AtomicBool = AtomicBool::new(false);
 
-/// Fetch older pages for `t` until the server has nothing older, `MAX_PAGES` is hit, or the user
-/// cancels. Each page is committed immediately so a crash or cancel loses nothing. SQLite work
-/// runs on the blocking pool; no connection is held across an await.
-/// Returns how many messages were new to the database.
-pub async fn sync_thread(s: &Session, t: &mut Thread) -> Result<usize> {
-    let id = t.id.clone();
-    let mut cursor =
-        tokio::task::spawn_blocking(move || MessageStore::open(DB_PATH).ok()?.oldest_msg_id(&id))
-            .await?
-            .unwrap_or_default();
+/// Fetch older pages for `thread` until the server has nothing older or the user cancels.
+/// Each page is committed before it is reported to `on_page_persisted`.
+/// SQLite work runs on the blocking pool; no connection is held across an await.
+///
+/// # Errors
+/// Returns an error when the history request, SQLite write, or blocking task fails.
+pub async fn sync_thread<F>(
+    s: &Session,
+    thread: &Thread,
+    store_path: &str,
+    mut on_page_persisted: F,
+) -> Result<usize>
+where
+    F: FnMut(usize, usize) + Send,
+{
+    let id = thread.id.clone();
+    let path = store_path.to_string();
+    let mut cursor = tokio::task::spawn_blocking(move || {
+        MessageStore::open(&path).map(|store| store.oldest_msg_id(&id))
+    })
+    .await??
+    .unwrap_or_default();
     let mut added = 0;
-    for _ in 0..MAX_PAGES {
+    let mut page_number = 0;
+    loop {
         if CANCEL.load(Ordering::Relaxed) {
             break;
         }
-        let resp = chat::get_cloud_messages(s, &t.id, &cursor, true, PAGE).await?;
-        let before = t.messages.len();
-        chat::merge_group_history(t, &resp);
-        if t.messages.len() == before {
+        let resp = chat::get_cloud_messages(s, &thread.id, &cursor, true, PAGE).await?;
+        let mut page = Thread {
+            presentation: thread.presentation.clone(),
+            unread: thread.unread.clone(),
+            id: thread.id.clone(),
+            name: thread.name.clone(),
+            preview: String::new(),
+            time: String::new(),
+            avatar: thread.avatar.clone(),
+            is_group: thread.is_group,
+            messages: Vec::new(),
+        };
+        chat::merge_group_history(&mut page, &resp);
+        if page.messages.is_empty() {
             break; // nothing older on the server
         }
-        let snapshot = t.clone();
-        added += tokio::task::spawn_blocking(move || {
+        let next = next_cursor(&page, &cursor);
+        let path = store_path.to_string();
+        let page_added = tokio::task::spawn_blocking(move || {
             store::persist_threads(
-                &mut MessageStore::open(DB_PATH)?,
-                std::slice::from_ref(&snapshot),
+                &mut MessageStore::open(&path)?,
+                std::slice::from_ref(&page),
             )
         })
         .await??;
-        match next_cursor(t, &cursor) {
-            Some(c) => cursor = c,
+        added += page_added;
+        page_number += 1;
+        on_page_persisted(page_number, page_added);
+        match next {
+            Some(next) => cursor = next,
             None => break,
         }
         tokio::time::sleep(PAUSE).await;

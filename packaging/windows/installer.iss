@@ -1,4 +1,4 @@
-#define MyAppName "ctdozlite"
+#define MyAppName "Best Zalo"
 ; Sentinel default: CI injects the real version from Cargo.toml at build time via
 ;   iscc /DMyAppVersion=<version> packaging/windows/installer.iss
 ; A local build without that flag intentionally gets 0.0.0 instead of a stale version.
@@ -17,7 +17,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={autopf}\ctdozlite
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
@@ -33,7 +33,7 @@ SolidCompression=no
 SignedUninstaller=no
 VersionInfoVersion={#MyAppVersion}.0
 VersionInfoCompany={#MyAppPublisher}
-VersionInfoDescription=ctdozlite Native Desktop Client Installer
+VersionInfoDescription=Best Zalo Native Desktop Client Installer
 VersionInfoTextVersion={#MyAppVersion}
 VersionInfoProductName={#MyAppName}
 VersionInfoProductVersion={#MyAppVersion}.0

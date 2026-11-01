@@ -324,6 +324,20 @@ impl MessageStore {
             }
         }
 
+        let loaded_count = self.hydrate_messages(threads, limit_per_thread)?;
+        crate::chat::deduplicate_threads(threads, None);
+        Ok(loaded_count)
+    }
+
+    /// Hydrate one thread from SQLite without loading other stored threads.
+    ///
+    /// # Errors
+    /// Returns an error when the SQLite query or transaction fails.
+    pub fn hydrate_thread(&self, thread: &mut Thread, limit_per_thread: usize) -> Result<usize> {
+        self.hydrate_messages(std::slice::from_mut(thread), limit_per_thread)
+    }
+
+    fn hydrate_messages(&self, threads: &mut [Thread], limit_per_thread: usize) -> Result<usize> {
         // Primary-key lookups for the messages actually in memory. This used to load every
         // (msg_id, thread_id) row in the database into a HashMap on each call. One transaction
         // around them: in autocommit every SELECT takes and drops the file lock, ~50 µs on
@@ -507,7 +521,6 @@ impl MessageStore {
         }
         drop(owner_of);
         tx.commit()?;
-        crate::chat::deduplicate_threads(threads, None);
         Ok(loaded_count)
     }
 }

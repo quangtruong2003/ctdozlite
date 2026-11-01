@@ -410,9 +410,9 @@ jobs:
           }
 
           echo "=== [4/4] Packaging .dmg installers (Apple Silicon, Intel, Universal) ==="
-          package_dmg "target/aarch64-apple-darwin/release/ctdozlite" "dist/ctdozlite-${VER}-macos-arm64.dmg" "ctdozlite (Apple Silicon)"
-          package_dmg "target/x86_64-apple-darwin/release/ctdozlite" "dist/ctdozlite-${VER}-macos-x86_64.dmg" "ctdozlite (Intel)"
-          package_dmg "target/universal-apple-darwin/release/ctdozlite" "dist/ctdozlite-${VER}-macos.dmg" "ctdozlite"
+          package_dmg "target/aarch64-apple-darwin/release/ctdozlite" "dist/ctdozlite-${VER}-macos-arm64.dmg" "Best Zalo (Apple Silicon)"
+          package_dmg "target/x86_64-apple-darwin/release/ctdozlite" "dist/ctdozlite-${VER}-macos-x86_64.dmg" "Best Zalo (Intel)"
+          package_dmg "target/universal-apple-darwin/release/ctdozlite" "dist/ctdozlite-${VER}-macos.dmg" "Best Zalo"
           python3 tests/native_packaging.py
           ls -lh dist/*.dmg
       - uses: actions/upload-artifact@v4

@@ -107,7 +107,7 @@ impl ZaloGuiApp {
                     if is_msg_nav {
                         ui.painter().rect_filled(
                             nav1_rect,
-                            Rounding::same(11.0),
+                            Rounding::same(2.0),
                             pal.primary.linear_multiply(0.18),
                         );
                         let pill = Rect::from_min_size(
@@ -118,7 +118,7 @@ impl ZaloGuiApp {
                             .rect_filled(pill, Rounding::same(2.0), pal.primary);
                     } else if nav1_resp.hovered() {
                         ui.painter()
-                            .rect_filled(nav1_rect, Rounding::same(11.0), pal.bg_hover);
+                            .rect_filled(nav1_rect, Rounding::same(2.0), pal.bg_hover);
                     }
                     draw_icon_chat_nav(
                         ui.painter(),
@@ -150,7 +150,7 @@ impl ZaloGuiApp {
                     if is_contacts_nav {
                         ui.painter().rect_filled(
                             nav2_rect,
-                            Rounding::same(11.0),
+                            Rounding::same(2.0),
                             pal.primary.linear_multiply(0.18),
                         );
                         let pill = Rect::from_min_size(
@@ -161,7 +161,7 @@ impl ZaloGuiApp {
                             .rect_filled(pill, Rounding::same(2.0), pal.primary);
                     } else if nav2_resp.hovered() {
                         ui.painter()
-                            .rect_filled(nav2_rect, Rounding::same(11.0), pal.bg_hover);
+                            .rect_filled(nav2_rect, Rounding::same(2.0), pal.bg_hover);
                     }
                     draw_lucide_icon(
                         ui.painter(),
@@ -196,7 +196,7 @@ impl ZaloGuiApp {
                     if is_groups_nav {
                         ui.painter().rect_filled(
                             nav2g_rect,
-                            Rounding::same(11.0),
+                            Rounding::same(2.0),
                             pal.primary.linear_multiply(0.18),
                         );
                         let pill = Rect::from_min_size(
@@ -207,7 +207,7 @@ impl ZaloGuiApp {
                             .rect_filled(pill, Rounding::same(2.0), pal.primary);
                     } else if nav2g_resp.hovered() {
                         ui.painter()
-                            .rect_filled(nav2g_rect, Rounding::same(11.0), pal.bg_hover);
+                            .rect_filled(nav2g_rect, Rounding::same(2.0), pal.bg_hover);
                     }
                     draw_icon_contacts(
                         ui.painter(),
@@ -226,7 +226,7 @@ impl ZaloGuiApp {
                         );
                         ui.painter().rect_filled(
                             badge_rect,
-                            Rounding::same(7.0),
+                            Rounding::same(2.0),
                             pal.primary,
                         );
                         ui.painter().text(
@@ -289,12 +289,12 @@ impl ZaloGuiApp {
                     if is_cloud_selected {
                         ui.painter().rect_filled(
                             nav3_rect,
-                            Rounding::same(11.0),
+                            Rounding::same(2.0),
                             pal.primary.linear_multiply(0.18),
                         );
                     } else if nav3_resp.hovered() {
                         ui.painter()
-                            .rect_filled(nav3_rect, Rounding::same(11.0), pal.bg_hover);
+                            .rect_filled(nav3_rect, Rounding::same(2.0), pal.bg_hover);
                     }
                     draw_icon_cloud(
                         ui.painter(),
@@ -338,7 +338,7 @@ impl ZaloGuiApp {
                     if self.feed_modal_open {
                         ui.painter().rect_filled(
                             nav4_rect,
-                            Rounding::same(11.0),
+                            Rounding::same(2.0),
                             pal.primary.linear_multiply(0.18),
                         );
                         let pill = Rect::from_min_size(
@@ -349,7 +349,7 @@ impl ZaloGuiApp {
                             .rect_filled(pill, Rounding::same(2.0), pal.primary);
                     } else if nav4_resp.hovered() {
                         ui.painter()
-                            .rect_filled(nav4_rect, Rounding::same(11.0), pal.bg_hover);
+                            .rect_filled(nav4_rect, Rounding::same(2.0), pal.bg_hover);
                     }
                     draw_icon_feed(
                         ui.painter(),
@@ -379,7 +379,7 @@ impl ZaloGuiApp {
                         ui.allocate_exact_size(Vec2::new(40.0, 40.0), Sense::click());
                     if sync_resp.hovered() {
                         ui.painter()
-                            .rect_filled(sync_rect, Rounding::same(10.0), pal.bg_hover);
+                            .rect_filled(sync_rect, Rounding::same(2.0), pal.bg_hover);
                     }
                     draw_icon_refresh(
                         ui.painter(),
@@ -425,12 +425,12 @@ impl ZaloGuiApp {
                     if self.settings_modal_open {
                         ui.painter().rect_filled(
                             set_rect,
-                            Rounding::same(10.0),
+                            Rounding::same(2.0),
                             pal.primary.linear_multiply(0.18),
                         );
                     } else if set_resp.hovered() {
                         ui.painter()
-                            .rect_filled(set_rect, Rounding::same(10.0), pal.bg_hover);
+                            .rect_filled(set_rect, Rounding::same(2.0), pal.bg_hover);
                     }
                     draw_icon_settings(
                         ui.painter(),
@@ -453,12 +453,12 @@ impl ZaloGuiApp {
                     }
                     let set_tip = if let Some(ref u) = self.update_info {
                         if u.has_update {
-                            format!("Cài đặt Zalo (🚀 Có bản cập nhật mới v{})", u.latest_version)
+                            format!("Cài đặt Best Zalo (🚀 Có bản cập nhật mới v{})", u.latest_version)
                         } else {
-                            format!("Cài đặt Zalo (v{})", env!("CARGO_PKG_VERSION"))
+                            format!("Cài đặt Best Zalo (v{})", env!("CARGO_PKG_VERSION"))
                         }
                     } else {
-                        format!("Cài đặt Zalo (v{})", env!("CARGO_PKG_VERSION"))
+                        format!("Cài đặt Best Zalo (v{})", env!("CARGO_PKG_VERSION"))
                     };
                     if set_resp
                         .on_hover_cursor(CursorIcon::PointingHand)
@@ -515,10 +515,10 @@ impl ZaloGuiApp {
                                 let (srch_r, srch_resp) =
                                     ui.allocate_exact_size(Vec2::new(42.0, 32.0), Sense::click());
                                 ui.painter()
-                                    .rect_filled(srch_r, Rounding::same(8.0), pal.bg_input);
+                                    .rect_filled(srch_r, Rounding::same(2.0), pal.bg_input);
                                 ui.painter().rect_stroke(
                                     srch_r,
-                                    Rounding::same(8.0),
+                                    Rounding::same(2.0),
                                     Stroke::new(1.0_f32, pal.border),
                                 );
                                 draw_icon_search(
@@ -550,12 +550,12 @@ impl ZaloGuiApp {
                             );
                             ui.painter().rect_filled(
                                 sbox_rect,
-                                Rounding::same(8.0),
+                                Rounding::same(2.0),
                                 pal.bg_input,
                             );
                             ui.painter().rect_stroke(
                                 sbox_rect,
-                                Rounding::same(8.0),
+                                Rounding::same(2.0),
                                 Stroke::new(
                                     1.0_f32,
                                     if has_q {
@@ -612,11 +612,8 @@ impl ZaloGuiApp {
                                     Sense::click(),
                                 );
                                 if clr_resp.hovered() {
-                                    ui.painter().circle_filled(
-                                        clr_rect.center(),
-                                        8.5,
-                                        pal.bg_hover,
-                                    );
+                    ui.painter()
+                        .rect_filled(clr_rect, Rounding::same(2.0), pal.bg_hover);
                                 }
                                 draw_lucide_icon(
                                     ui.painter(),
@@ -643,7 +640,7 @@ impl ZaloGuiApp {
                                 ui.allocate_exact_size(Vec2::new(32.0, 32.0), Sense::click());
                             ui.painter().rect_filled(
                                 add_rect,
-                                Rounding::same(8.0),
+                                Rounding::same(2.0),
                                 if self.phone_modal_open {
                                     pal.primary.linear_multiply(0.22)
                                 } else if add_resp.hovered() {
@@ -654,7 +651,7 @@ impl ZaloGuiApp {
                             );
                             ui.painter().rect_stroke(
                                 add_rect,
-                                Rounding::same(8.0),
+                                Rounding::same(2.0),
                                 Stroke::new(
                                     1.0_f32,
                                     if self.phone_modal_open || add_resp.hovered() {
@@ -826,7 +823,7 @@ impl ZaloGuiApp {
                     egui::Frame::none()
                         .fill(pal.primary.linear_multiply(0.14))
                         .stroke(Stroke::new(1.0_f32, pal.primary))
-                        .rounding(Rounding::same(9.0))
+                        .rounding(Rounding::same(2.0))
                         .inner_margin(Margin::symmetric(10.0, 7.0))
                         .outer_margin(Margin::symmetric(8.0, 4.0))
                         .show(ui, |ui| {
@@ -855,7 +852,7 @@ impl ZaloGuiApp {
                                             .strong(),
                                     )
                                     .fill(pal.primary)
-                                    .rounding(Rounding::same(6.0));
+                                    .rounding(Rounding::same(2.0));
                                     if ui
                                         .add(btn)
                                         .on_hover_cursor(CursorIcon::PointingHand)
@@ -1025,7 +1022,7 @@ impl ZaloGuiApp {
                             };
 
                             ui.painter()
-                                .rect_filled(row_rect, Rounding::same(11.0), bg);
+                                .rect_filled(row_rect, Rounding::same(2.0), bg);
 
                             // Left active indicator bar (`w-1 bg-zalo-500 rounded-r-full`)
                             if is_selected {
@@ -1213,7 +1210,7 @@ impl ZaloGuiApp {
                                     );
                                     ui.painter().rect_filled(
                                         b_rect,
-                                        Rounding::same(8.5),
+                                        Rounding::same(2.0),
                                         pal.danger,
                                     );
                                     ui.painter().text(
@@ -1567,7 +1564,7 @@ impl ZaloGuiApp {
                                 if r_resp.hovered() {
                                     ui.painter().rect_filled(
                                         r_rect,
-                                        Rounding::same(10.0),
+                                        Rounding::same(2.0),
                                         pal.bg_hover,
                                     );
                                 }
@@ -1647,9 +1644,9 @@ impl ZaloGuiApp {
                     if self.unread_counts.remove(&tid).is_some() {
                         let total_unread: usize = self.unread_counts.values().sum();
                         let title = if total_unread > 0 {
-                            format!("({total_unread}) Zalo Lite — Native Rust Client")
+                            format!("({total_unread}) Best Zalo")
                         } else {
-                            "Zalo Lite — Native Rust Client".to_string()
+                            "Best Zalo".to_string()
                         };
                         ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
                     }
@@ -1713,9 +1710,9 @@ impl ZaloGuiApp {
                             }
                             let total_unread: usize = self.unread_counts.values().sum();
                             let title = if total_unread > 0 {
-                                format!("({total_unread}) Zalo Lite — Native Rust Client")
+                                format!("({total_unread}) Best Zalo")
                             } else {
-                                "Zalo Lite — Native Rust Client".to_string()
+                                "Best Zalo".to_string()
                             };
                             ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
                             if let Some(tx) = WORKER_TX.get() {
@@ -1970,7 +1967,7 @@ impl ZaloGuiApp {
                                         )
                                         .fill(pal.bg_elevated)
                                         .stroke(Stroke::new(1.0_f32, pal.border))
-                                        .rounding(Rounding::same(8.0))
+                                        .rounding(Rounding::same(2.0))
                                         .min_size(Vec2::new(92.0, 30.0));
                                         if ui
                                             .add(sync_btn)
@@ -2008,7 +2005,7 @@ impl ZaloGuiApp {
                                             pal.bg_elevated
                                         })
                                         .stroke(Stroke::new(1.0_f32, pal.border))
-                                        .rounding(Rounding::same(8.0))
+                                        .rounding(Rounding::same(2.0))
                                         .min_size(Vec2::new(92.0, 30.0));
                                         if ui
                                             .add(star_btn)
@@ -2027,7 +2024,7 @@ impl ZaloGuiApp {
                                         )
                                         .fill(pal.primary.linear_multiply(0.12))
                                         .stroke(Stroke::new(1.0_f32, pal.primary))
-                                        .rounding(Rounding::same(8.0))
+                                        .rounding(Rounding::same(2.0))
                                         .min_size(Vec2::new(192.0, 28.0));
                                         if ui
                                             .add(prof_btn)
@@ -2099,7 +2096,7 @@ impl ZaloGuiApp {
                                             );
                                             ui.painter().rect_filled(
                                                 cell_r,
-                                                Rounding::same(8.0),
+                                                Rounding::same(2.0),
                                                 pal.bg_elevated,
                                             );
                                             if let Some(tex) = self.sticker_textures.get(tkey) {
@@ -2122,7 +2119,7 @@ impl ZaloGuiApp {
                                             }
                                             ui.painter().rect_stroke(
                                                 cell_r,
-                                                Rounding::same(8.0),
+                                                Rounding::same(2.0),
                                                 Stroke::new(
                                                     1.0_f32,
                                                     if cell_resp.hovered() {
@@ -2200,7 +2197,7 @@ impl ZaloGuiApp {
                                         );
                                         ui.painter().rect_filled(
                                             id_rect,
-                                            Rounding::same(5.0),
+                                            Rounding::same(2.0),
                                             if id_resp.hovered() {
                                                 pal.bg_hover
                                             } else {
@@ -2368,7 +2365,7 @@ impl ZaloGuiApp {
                                                     };
                                                 egui::Frame::none()
                                                     .fill(tag_bg)
-                                                    .rounding(Rounding::same(4.0))
+                                                    .rounding(Rounding::same(2.0))
                                                     .inner_margin(Margin::symmetric(6.0, 1.5))
                                                     .show(ui, |ui| {
                                                         ui.label(
@@ -2450,7 +2447,7 @@ impl ZaloGuiApp {
                                         );
                                         ui.painter().rect_filled(
                                             drw_rect,
-                                            Rounding::same(8.0),
+                                            Rounding::same(2.0),
                                             if self.info_drawer_open {
                                                 pal.primary.linear_multiply(0.18)
                                             } else if drw_resp.hovered() {
@@ -2498,7 +2495,7 @@ impl ZaloGuiApp {
                                     if vid_resp.hovered() {
                                         ui.painter().rect_filled(
                                             vid_rect,
-                                            Rounding::same(8.0),
+                                            Rounding::same(2.0),
                                             pal.bg_hover,
                                         );
                                     }
@@ -2561,7 +2558,7 @@ impl ZaloGuiApp {
                                     if aud_resp.hovered() {
                                         ui.painter().rect_filled(
                                             aud_rect,
-                                            Rounding::same(8.0),
+                                            Rounding::same(2.0),
                                             pal.bg_hover,
                                         );
                                     }
@@ -2610,7 +2607,7 @@ impl ZaloGuiApp {
                                     );
                                     ui.painter().rect_filled(
                                         srch_rect,
-                                        Rounding::same(8.0),
+                                        Rounding::same(2.0),
                                         if self.in_chat_search_open {
                                             pal.primary.linear_multiply(0.18)
                                         } else if srch_resp.hovered() {
@@ -2689,7 +2686,7 @@ impl ZaloGuiApp {
                                                     )
                                                     .fill(pal.bg_input)
                                                     .stroke(Stroke::new(1.0_f32, pal.border))
-                                                    .rounding(Rounding::same(6.0))
+                                                    .rounding(Rounding::same(2.0))
                                                     .min_size(Vec2::new(68.0, 26.0));
                                                     if ui
                                                         .add(rej_btn)
@@ -2716,7 +2713,7 @@ impl ZaloGuiApp {
                                                         .strong(),
                                                     )
                                                     .fill(pal.accent_online)
-                                                    .rounding(Rounding::same(6.0))
+                                                    .rounding(Rounding::same(2.0))
                                                     .min_size(Vec2::new(124.0, 26.0));
                                                     if ui
                                                         .add(acc_btn)
@@ -2754,7 +2751,7 @@ impl ZaloGuiApp {
                                                     )
                                                     .fill(pal.bg_input)
                                                     .stroke(Stroke::new(1.0_f32, pal.border))
-                                                    .rounding(Rounding::same(6.0))
+                                                    .rounding(Rounding::same(2.0))
                                                     .min_size(Vec2::new(86.0, 26.0));
                                                     if ui
                                                         .add(undo_btn)
@@ -2793,7 +2790,7 @@ impl ZaloGuiApp {
                                                         .strong(),
                                                     )
                                                     .fill(pal.primary)
-                                                    .rounding(Rounding::same(6.0))
+                                                    .rounding(Rounding::same(2.0))
                                                     .min_size(Vec2::new(92.0, 26.0));
                                                     if ui
                                                         .add(add_btn)
@@ -2919,7 +2916,7 @@ impl ZaloGuiApp {
                                             }
                                         } else {
                                             format!(
-                                                "🚀 Đã có bản cập nhật mới ctdozlite v{} trên GitHub Releases!",
+                                                "🚀 Đã có bản cập nhật mới Best Zalo v{} trên GitHub Releases!",
                                                 upd.latest_version
                                             )
                                         };
@@ -2963,7 +2960,7 @@ impl ZaloGuiApp {
                                                                     .strong(),
                                                                 )
                                                                 .fill(pal.accent_online)
-                                                                .rounding(Rounding::same(5.0)),
+                                                                .rounding(Rounding::same(2.0)),
                                                             )
                                                             .on_hover_cursor(
                                                                 CursorIcon::PointingHand,
@@ -3068,7 +3065,7 @@ impl ZaloGuiApp {
                                     let pill_w = (bar_avail_w - right_reserve).max(140.0);
                                     egui::Frame::none()
                                         .fill(pal.bg_input)
-                                        .rounding(Rounding::same(8.0))
+                                        .rounding(Rounding::same(2.0))
                                         .stroke(Stroke::new(
                                             1.0_f32,
                                             pal.primary.linear_multiply(0.65),
@@ -3121,9 +3118,9 @@ impl ZaloGuiApp {
                                                             Sense::click(),
                                                         );
                                                     if clr_resp.hovered() {
-                                                        ui.painter().circle_filled(
-                                                            clr_r.center(),
-                                                            8.0,
+                                                        ui.painter().rect_filled(
+                                                            clr_r,
+                                                            Rounding::same(2.0),
                                                             pal.bg_hover,
                                                         );
                                                     }
@@ -3153,7 +3150,7 @@ impl ZaloGuiApp {
                                         };
                                         egui::Frame::none()
                                             .fill(badge_col.linear_multiply(0.14))
-                                            .rounding(Rounding::same(6.0))
+                                            .rounding(Rounding::same(2.0))
                                             .inner_margin(Margin::symmetric(8.0, 4.0))
                                             .show(ui, |ui| {
                                                 ui.label(
@@ -3178,7 +3175,7 @@ impl ZaloGuiApp {
                                         )
                                         .fill(pal.bg_elevated)
                                         .stroke(Stroke::new(1.0_f32, pal.border))
-                                        .rounding(Rounding::same(6.0))
+                                        .rounding(Rounding::same(2.0))
                                         .min_size(Vec2::new(66.0, 28.0));
                                         if ui
                                             .add(close_btn)
@@ -3269,12 +3266,12 @@ impl ZaloGuiApp {
                                                     )
                                                     .fill(pal.bg_elevated)
                                                     .stroke(Stroke::new(1.0_f32, pal.border))
-                                                    .rounding(Rounding::same(12.0));
+                                                    .rounding(Rounding::same(2.0));
                                                     if ui
                                                         .add(hist_btn)
                                                         .on_hover_cursor(CursorIcon::PointingHand)
                                                         .on_hover_text(
-                                                            "Đồng bộ thêm lịch sử tin nhắn cũ từ máy chủ Zalo",
+                                                            "Tải tin nhắn cũ đã lưu; nếu còn thiếu, tiếp tục đồng bộ từ Zalo",
                                                         )
                                                         .clicked()
                                                     {
@@ -3425,7 +3422,7 @@ impl ZaloGuiApp {
                         self.chat_render_window.1 += CHAT_RENDER_STEP;
                     }
                     if load_older_clicked {
-                        self.show_toast("Đang tải thêm tin nhắn cũ từ máy chủ Zalo…");
+                        self.show_toast("Đang tải thêm tin nhắn cũ…");
                     }
 
                     if let Some((idx, action)) = pending_action {
@@ -3666,7 +3663,7 @@ impl ZaloGuiApp {
                                         ui.add(
                                             egui::Image::new(tex)
                                                 .fit_to_exact_size(Vec2::new(48.0, 48.0))
-                                                .rounding(Rounding::same(6.0)),
+                                                .rounding(Rounding::same(2.0)),
                                         );
                                         ui.add_space(6.0);
                                         ui.vertical(|ui| {
@@ -3790,7 +3787,7 @@ impl ZaloGuiApp {
 
                             egui::Frame::none()
                                 .fill(pal.bg_input)
-                                .rounding(Rounding::same(11.0))
+                                .rounding(Rounding::same(2.0))
                                 .stroke(Stroke::new(1.0_f32, pal.border))
                                 .inner_margin(Margin::symmetric(8.0, 5.0))
                                 .show(ui, |ui| {
@@ -3805,7 +3802,7 @@ impl ZaloGuiApp {
                                         if self.sticker_picker_open || stk_resp.hovered() {
                                             ui.painter().rect_filled(
                                                 stk_rect,
-                                                Rounding::same(8.0),
+                                                Rounding::same(2.0),
                                                 pal.bg_hover,
                                             );
                                         }
@@ -3835,7 +3832,7 @@ impl ZaloGuiApp {
                                         if img_resp.hovered() {
                                             ui.painter().rect_filled(
                                                 img_rect,
-                                                Rounding::same(8.0),
+                                                Rounding::same(2.0),
                                                 pal.bg_hover,
                                             );
                                         }
@@ -3875,7 +3872,7 @@ impl ZaloGuiApp {
                                         if att_resp.hovered() {
                                             ui.painter().rect_filled(
                                                 att_rect,
-                                                Rounding::same(8.0),
+                                                Rounding::same(2.0),
                                                 pal.bg_hover,
                                             );
                                         }
@@ -4030,7 +4027,7 @@ impl ZaloGuiApp {
                                         if self.schedule_modal_open || sched_resp.hovered() {
                                             ui.painter().rect_filled(
                                                 sched_rect,
-                                                Rounding::same(8.0),
+                                                Rounding::same(2.0),
                                                 pal.bg_hover,
                                             );
                                         }
@@ -4072,7 +4069,7 @@ impl ZaloGuiApp {
                                         };
                                         ui.painter().rect_filled(
                                             send_rect,
-                                            Rounding::same(8.0),
+                                            Rounding::same(2.0),
                                             send_bg,
                                         );
                                         if !is_narrow_w {

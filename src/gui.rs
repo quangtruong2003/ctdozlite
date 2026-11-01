@@ -3,7 +3,7 @@
 //! Designed with the UI/UX Pro Max Minimalism & Swiss Style system:
 //! - Zero-idle-CPU reactive architecture (event-driven repaint, zero per-frame Thread cloning)
 //! - Custom vector icons rendered via `egui::Painter` (zero texture/SVG bloat)
-//! - High-contrast Light & Dark semantic color tokens (`#0068FF` / `#2563EB` primary, `#059669` online accent)
+//! - Neutral light and dark palettes with semantic status colors
 //! - Filterable conversation sidebar (`Tất cả`, `Cá nhân`, `Nhóm`), avatar badges, and grouped chat bubbles
 //! - Built-in Zalo Sticker rendering & picker (`[Nhãn dán]`)
 
@@ -51,6 +51,7 @@ pub enum GuiEvent {
     },
     LoginFailed(String),
     ThreadsUpdated(Vec<Thread>),
+    HistorySyncUpdated(Vec<Thread>),
     MessageSent {
         thread_id: String,
         text: String,
@@ -170,6 +171,31 @@ pub enum GuiEvent {
         Result<(Vec<crate::feed::SocialUserProfile>, Vec<crate::feed::FeedItem>), String>,
     ),
     LoggedOut,
+    LocalHistoryLoaded(Thread),
+}
+
+fn merge_history_sync_updates(threads: &mut [Thread], updates: Vec<Thread>) {
+    // Historical pages are not live arrivals, so they must not change unread state.
+    for update in updates {
+        if let Some(existing) = threads.iter_mut().find(|thread| thread.id == update.id) {
+            crate::chat::merge_thread_into(existing, update, false);
+        }
+    }
+}
+
+fn format_history_sync_summary(added: usize, errors: &[String], cancelled: bool) -> String {
+    let head = if cancelled {
+        "Đã dừng đồng bộ"
+    } else if errors.is_empty() {
+        "Đồng bộ xong"
+    } else {
+        "Đồng bộ một phần"
+    };
+    let mut message = format!("{head}: lưu thêm {added} tin cũ");
+    if let Some(first) = errors.first() {
+        message.push_str(&format!(" · {} lỗi (vd. {first})", errors.len()));
+    }
+    message
 }
 
 #[derive(Debug, Clone)]
@@ -883,9 +909,9 @@ impl ZaloGuiApp {
                         if new_incoming_alert && self.settings.enable_notifications {
                             let total_unread: usize = self.unread_counts.values().sum();
                             let title = if total_unread > 0 {
-                                format!("({total_unread}) ctdozlite")
+                                format!("({total_unread}) Best Zalo")
                             } else {
-                                "ctdozlite".to_string()
+                                "Best Zalo".to_string()
                             };
                             ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
                             if !is_focused {
@@ -913,6 +939,25 @@ impl ZaloGuiApp {
                         self.persist_threads_async();
                     }
                     self.status_msg = format!("Trực tuyến · Cập nhật {}", crate::ui::clock());
+                }
+                GuiEvent::HistorySyncUpdated(updates) => {
+                    ensure_cjk_font(ctx, thread_texts(&updates));
+                    merge_history_sync_updates(&mut self.threads, updates);
+                }
+                GuiEvent::LocalHistoryLoaded(update) => {
+                    let update_id = update.id.clone();
+                    ensure_cjk_font(ctx, thread_texts(std::slice::from_ref(&update)));
+                    merge_history_sync_updates(&mut self.threads, vec![update]);
+                    if self
+                        .threads
+                        .get(self.selected_thread_index)
+                        .is_some_and(|thread| thread.id == update_id)
+                    {
+                        if self.chat_render_window.0 != update_id {
+                            self.chat_render_window = (update_id, CHAT_RENDER_STEP);
+                        }
+                        self.chat_render_window.1 += CHAT_RENDER_STEP;
+                    }
                 }
                 GuiEvent::SessionExpired(reason) => {
                     self.is_logged_in = false;
@@ -1361,15 +1406,7 @@ impl ZaloGuiApp {
                     errors,
                     cancelled,
                 } => {
-                    let head = if cancelled {
-                        "Đã dừng đồng bộ"
-                    } else {
-                        "Đồng bộ xong"
-                    };
-                    let mut msg = format!("{head}: lưu thêm {added} tin cũ");
-                    if let Some(first) = errors.first() {
-                        msg.push_str(&format!(" · {} lỗi (vd. {first})", errors.len()));
-                    }
+                    let msg = format_history_sync_summary(added, &errors, cancelled);
                     self.status_msg = msg.clone();
                     self.show_toast(msg);
                 }
@@ -1685,12 +1722,12 @@ impl ZaloGuiApp {
                         );
                     } else {
                         ui.painter()
-                            .rect_filled(logo_rect, Rounding::same(5.0), pal.primary);
+                            .rect_filled(logo_rect, Rounding::same(2.0), pal.primary);
                     }
 
                     ui.add_space(6.0);
                     ui.label(
-                        RichText::new("ctdozlite")
+                        RichText::new("Best Zalo")
                             .color(pal.text_primary)
                             .size(13.5)
                             .strong(),
@@ -1699,7 +1736,7 @@ impl ZaloGuiApp {
                     // Subtle "Native v<version>" pill badge
                     egui::Frame::none()
                         .fill(pal.primary.linear_multiply(0.14))
-                        .rounding(Rounding::same(4.0))
+                        .rounding(Rounding::same(2.0))
                         .inner_margin(Margin::symmetric(5.0, 1.5))
                         .show(ui, |ui| {
                             ui.label(
@@ -1714,7 +1751,7 @@ impl ZaloGuiApp {
                         ui.add_space(4.0);
                         egui::Frame::none()
                             .fill(pal.danger)
-                            .rounding(Rounding::same(8.0))
+                            .rounding(Rounding::same(2.0))
                             .inner_margin(Margin::symmetric(6.0, 1.5))
                             .show(ui, |ui| {
                                 ui.label(
@@ -1899,7 +1936,7 @@ impl ZaloGuiApp {
                                         .strong(),
                                 )
                                 .fill(pal.accent_online)
-                                .rounding(Rounding::same(5.0));
+                                .rounding(Rounding::same(2.0));
                                 let r = ui
                                     .add(upd_pill)
                                     .on_hover_cursor(CursorIcon::PointingHand)
@@ -1925,7 +1962,7 @@ impl ZaloGuiApp {
                             )
                             .fill(pal.primary.linear_multiply(0.12))
                             .stroke(Stroke::new(1.0_f32, pal.primary))
-                            .rounding(Rounding::same(5.0));
+                            .rounding(Rounding::same(2.0));
                             let r = ui
                                 .add(hist_btn)
                                 .on_hover_cursor(CursorIcon::PointingHand);
@@ -1979,7 +2016,7 @@ impl ZaloGuiApp {
 
             egui::Frame::none()
                 .fill(pal.bg_elevated)
-                .rounding(Rounding::same(16.0))
+                .rounding(Rounding::same(2.0))
                 .stroke(Stroke::new(1.0_f32, pal.border))
                 .inner_margin(Margin::symmetric(28.0, 24.0))
                 .show(ui, |ui| {
@@ -1988,7 +2025,7 @@ impl ZaloGuiApp {
                         // Segmented Tab Switcher
                         egui::Frame::none()
                             .fill(pal.bg_input)
-                            .rounding(Rounding::same(10.0))
+                            .rounding(Rounding::same(2.0))
                             .inner_margin(Margin::same(4.0))
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
@@ -2014,7 +2051,7 @@ impl ZaloGuiApp {
                                             Color32::TRANSPARENT
                                         })
                                         .stroke(Stroke::NONE)
-                                        .rounding(Rounding::same(7.0))
+                                        .rounding(Rounding::same(2.0))
                                         .min_size(Vec2::new(tab_w, 32.0));
 
                                         if ui
@@ -2035,7 +2072,7 @@ impl ZaloGuiApp {
                                 if let Some(tex) = &self.qr_texture {
                                     egui::Frame::none()
                                         .fill(Color32::WHITE)
-                                        .rounding(Rounding::same(12.0))
+                                        .rounding(Rounding::same(2.0))
                                         .stroke(Stroke::new(1.0_f32, pal.border))
                                         .inner_margin(Margin::same(14.0))
                                         .show(ui, |ui| {
@@ -2048,12 +2085,12 @@ impl ZaloGuiApp {
                                     );
                                     ui.painter().rect_filled(
                                         rect,
-                                        Rounding::same(12.0),
+                                        Rounding::same(2.0),
                                         pal.bg_input,
                                     );
                                     ui.painter().rect_stroke(
                                         rect,
-                                        Rounding::same(12.0),
+                                        Rounding::same(2.0),
                                         Stroke::new(1.0_f32, pal.border),
                                     );
                                     ui.painter().text(
@@ -2080,7 +2117,7 @@ impl ZaloGuiApp {
                                         .strong(),
                                 )
                                 .fill(pal.primary)
-                                .rounding(Rounding::same(8.0))
+                                .rounding(Rounding::same(2.0))
                                 .min_size(Vec2::new(200.0, 36.0));
 
                                 if ui
@@ -2142,7 +2179,7 @@ impl ZaloGuiApp {
                                             .strong(),
                                     )
                                     .fill(pal.primary)
-                                    .rounding(Rounding::same(8.0))
+                                    .rounding(Rounding::same(2.0))
                                     .min_size(Vec2::new(ui.available_width(), 38.0));
 
                                     if ui
@@ -2176,7 +2213,10 @@ impl ZaloGuiApp {
 
 #[cfg(test)]
 mod tests {
-    use super::is_newer_semver;
+    use super::{
+        format_history_sync_summary, is_newer_semver, merge_history_sync_updates,
+    };
+    use crate::chat::{ChatMessage, Thread};
 
     #[test]
     fn semver_comparison_handles_v_prefix_and_prerelease() {
@@ -2185,5 +2225,64 @@ mod tests {
         assert!(is_newer_semver("V1.0.0-beta.1", "0.9.9"));
         assert!(!is_newer_semver("v0.0.1", "0.0.1"));
         assert!(!is_newer_semver("0.0.1", "0.0.2"));
+    }
+
+    #[test]
+    fn history_sync_refresh_merges_saved_messages_without_reordering_or_unreading() {
+        let message = |id: &str, ts: i64| ChatMessage {
+            id: id.into(),
+            text: format!("message {id}"),
+            ts,
+            ..Default::default()
+        };
+        let mut active = Thread {
+            id: "active".into(),
+            name: "Active thread".into(),
+            messages: vec![message("200", 200)],
+            ..Default::default()
+        };
+        active.unread.marked_unread = true;
+        active.unread.unread_ids.insert("200".into());
+        let other = Thread {
+            id: "other".into(),
+            name: "Other thread".into(),
+            ..Default::default()
+        };
+        let mut threads = vec![active, other];
+        let unread_before = threads[0].unread.clone();
+
+        merge_history_sync_updates(
+            &mut threads,
+            vec![Thread {
+                id: "active".into(),
+                name: "Active thread".into(),
+                messages: vec![message("100", 100)],
+                ..Default::default()
+            }],
+        );
+
+        assert_eq!(
+            threads.iter().map(|thread| thread.id.as_str()).collect::<Vec<_>>(),
+            vec!["active", "other"]
+        );
+        assert_eq!(
+            threads[0].messages.iter().map(|message| message.id.as_str()).collect::<Vec<_>>(),
+            vec!["100", "200"]
+        );
+        assert_eq!(threads[0].unread, unread_before);
+    }
+
+    #[test]
+    fn history_sync_summary_marks_partial_errors_as_partial() {
+        let summary = format_history_sync_summary(
+            1,
+            &["Test group: lỗi kết nối".into()],
+            false,
+        );
+
+        assert!(summary.starts_with("Đồng bộ một phần"));
+        assert!(summary.contains("lưu thêm 1 tin cũ"));
+        assert!(summary.contains("Test group: lỗi kết nối"));
+        assert!(!summary.contains("Đồng bộ xong"));
     }
 }

@@ -30,6 +30,7 @@ Ubiquitous language for `ctdozlite`. Use these terms verbatim in issues, ADRs, t
 | :--- | :--- | :--- |
 | **Thread** | A conversation: 1:1 user thread or group thread. Identified by `thread_id`. | "chat", "conversation" (when the ID matters) |
 | **Message** | One chat entry with `msg_id`, `thread_id`, sender, timestamp, type and raw JSON. | "text" |
+| **History Sync** | Retrieval of messages still available from Zalo into the local `Store`, where they become part of conversation history. | "device sync", "message upload" |
 | **Local message ID** | Client-generated ID used to reconcile optimistic UI rows with server echoes. | "temp id" |
 | **Recall** | Server-side removal of a message for all participants. | "delete" (that is local-only) |
 | **Delete for me** | Local-only removal mirrored into SQLite. | "recall" |

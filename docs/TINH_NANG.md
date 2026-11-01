@@ -62,7 +62,7 @@ Cột **Issue** trỏ tới nơi đang theo dõi. Nếu issue đã đóng, tính
 | Nhận tin nhắn mới theo thời gian thực | ✅ | Polling trong worker + WebSocket | [#28](https://github.com/ctdoteam1110/ctdozlite/issues/28) |
 | Tìm kiếm hội thoại & nội dung tin nhắn | ✅ | Tìm không dấu theo tên hội thoại và nội dung tin nhắn trong `zalo_history.db` | [#5](https://github.com/ctdoteam1110/ctdozlite/issues/5) |
 | Lưu lịch sử cục bộ (SQLite) | ✅ | `zalo_history.db` | |
-| Đồng bộ lịch sử cũ (History Sync) | ✅ | Đồng bộ phân trang có lưu checkpoint (`history_sync_cursors`) cho nhóm và Cloud của tôi, kèm giải mã backup lịch sử Zalo PC | [#19](https://github.com/ctdoteam1110/ctdozlite/issues/19), [#10](https://github.com/ctdoteam1110/ctdozlite/issues/10) |
+| Đồng bộ lịch sử cũ (History Sync) | ✅ | Tải lịch sử nhóm và Cloud theo trang, tiếp tục từ tin máy chủ cũ nhất đã lưu; có thể dừng và tiếp tục. Lịch sử 1:1 chưa có luồng đã xác minh | [#19](https://github.com/ctdoteam1110/ctdozlite/issues/19), [#10](https://github.com/ctdoteam1110/ctdozlite/issues/10) |
 | Nút "Làm mới hội thoại" | ✅ | Làm mới danh sách bạn bè, nhóm, tin nhắn mới và hiển thị rõ trạng thái / lỗi nếu có | [#23](https://github.com/ctdoteam1110/ctdozlite/issues/23) |
 | Nhập (Migrate) lịch sử từ máy/thư mục khác | ✅ | **Cài đặt → Đồng bộ tin nhắn → Chọn file hoặc thư mục để nhập** (hỗ trợ `.db`/`.sqlite` và `.json`/`.jsonl`) | [#9](https://github.com/ctdoteam1110/ctdozlite/issues/9) |
 

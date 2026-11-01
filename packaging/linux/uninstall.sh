@@ -12,4 +12,4 @@ rm -f /usr/local/bin/ctdozlite \
       "$HOME/.local/share/applications/ctdozlite.desktop" \
       "$HOME/.local/share/icons/hicolor/256x256/apps/ctdozlite.png"
 
-echo "Đã gỡ cài đặt ctdozlite."
+echo "Đã gỡ cài đặt Best Zalo."

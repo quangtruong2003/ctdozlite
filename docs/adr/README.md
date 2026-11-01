@@ -35,6 +35,9 @@ What we will do, in one paragraph, present tense.
 
 | ADR | Title | Status |
 | :--- | :--- | :--- |
-| — | No decisions recorded yet | — |
+| [ADR-0001](0001-history-sync.md) | Kiến trúc đồng bộ lịch sử tin nhắn (History Sync & Backup Import) | Accepted |
+| [ADR-0002](0002-self-updater.md) | Giao thức tự cập nhật và cấu trúc `latest.json` (Self-Updater Contract) | Accepted |
+| [ADR-0003](0003-changelog-policy.md) | Chính sách Changelog & Release Notes | Accepted |
+| [ADR-0004](0004-history-sync-cursor.md) | Con trỏ History Sync lấy từ Store | Accepted |
 
 Related domain language lives in [`/GLOSSARY.md`](../../GLOSSARY.md).

@@ -67,3 +67,17 @@ MUST read the corresponding standard file under `docs/standards/` before modifyi
 - **Tests, fixtures, and benchmarks** → `docs/standards/testing-and-fixtures.md`
 - **Secrets, crypto, and session handling** → `docs/standards/security-and-cryptography.md`
 - **Branches, commits, and PRs** → `docs/standards/git-flow-and-pr-matrix.md`
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues live in `quangtruong2003/ctdozlite`; pass `--repo` explicitly. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the repository's existing triage role mappings. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` and `docs/adr/`. See `docs/agents/domain.md`.
