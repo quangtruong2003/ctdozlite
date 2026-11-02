@@ -3445,4 +3445,52 @@ mod tests {
         let _ = std::fs::remove_file(format!("{db_path}-wal"));
         let _ = std::fs::remove_file(format!("{db_path}-shm"));
     }
+
+    #[tokio::test]
+    async fn history_sync_does_not_treat_nested_server_errors_as_exhaustion() {
+        let _guard = SYNC_TEST_LOCK.lock().unwrap();
+        crate::history_sync::CANCEL.store(false, Ordering::Relaxed);
+
+        let nested_error = serde_json::json!({
+            "error_code": 18060,
+            "error_message": "invalid history params",
+            "data": { "groupMsgs": [] }
+        })
+        .to_string();
+        let response = serde_json::json!({
+            "error_code": 0,
+            "data": nested_error
+        })
+        .to_string();
+        let (cloud_host, server) = serve_pages(vec![response]);
+        let mut session = Session::new(false, false, false).unwrap();
+        session.login = Some(LoginInfo::default());
+        session.secret_key = Some(vec![7; 16]);
+        session.domains.cloud_msg = cloud_host;
+        let db_path = temp_history_db("ctdozlite-history-nested-error");
+        let (event_tx, _event_rx) = std::sync::mpsc::channel();
+        let gui_tx = GuiTx {
+            tx: event_tx,
+            ctx: egui::Context::default(),
+        };
+
+        let finished = run_history_sync(
+            &session,
+            vec![("g123".into(), "Test group".into(), true)],
+            &db_path,
+            &gui_tx,
+        )
+        .await;
+        let GuiEvent::SyncFinished { added, errors, .. } = finished else {
+            panic!("history sync must finish with its summary event");
+        };
+
+        assert_eq!(added, 0);
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].contains("18060"));
+        assert_eq!(server.join().unwrap().len(), 1);
+        let _ = std::fs::remove_file(&db_path);
+        let _ = std::fs::remove_file(format!("{db_path}-wal"));
+        let _ = std::fs::remove_file(format!("{db_path}-shm"));
+    }
 }

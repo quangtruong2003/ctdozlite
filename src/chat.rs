@@ -3936,6 +3936,24 @@ pub async fn get_cloud_messages(
             }
         }
     }
+    let server_error_code = dec
+        .get("error_code")
+        .and_then(Value::as_i64)
+        .filter(|code| *code != 0)
+        .or_else(|| {
+            dec.pointer("/data/error_code")
+                .and_then(Value::as_i64)
+                .filter(|code| *code != 0)
+        });
+    if let Some(code) = server_error_code {
+        let message = dec
+            .get("error_message")
+            .and_then(Value::as_str)
+            .filter(|message| !message.is_empty())
+            .or_else(|| dec.pointer("/data/error_message").and_then(Value::as_str))
+            .unwrap_or_default();
+        return Err(crate::session::SessionError::new(code, message).into());
+    }
     Ok(dec)
 }
 
